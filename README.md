@@ -65,6 +65,20 @@ New UI tests are created with Playwright's official [Test Agents](https://playwr
 
 The agents start from a seed test: `tests/seed.spec.ts` signs in through the API, and `tests/seed-logged-out.spec.ts` starts on the login page. The seed also shows the conventions generated tests should follow. Plans and generated tests are reviewed in a PR like any other code. See [`specs/README.md`](specs/README.md) for the workflow.
 
+## UI test suite (agent-generated)
+
+The portal's UI tests were planned and written by the Playwright Test Agents, then reviewed. Each test file links back to its plan.
+
+| Feature | Plan | Tests |
+|---|---|---|
+| Sign in / sign out | `specs/login.md` | `tests/e2e/login/` (6) |
+| Time off | `specs/time-off.md` | `tests/e2e/time-off/` (7) |
+| Documents | `specs/documents.md` | `tests/e2e/documents/` (7) |
+| Employee directory | `specs/directory.md` | `tests/e2e/directory/` (5) |
+| Profile + navigation | `specs/profile-and-navigation.md` | `tests/e2e/profile/` (5), `tests/e2e/navigation/` (1) |
+
+These are ordinary Playwright tests with role/label locators and web-first assertions, and no LLM runs at test time. The upload tests check the new document row as well as the success message, so they fail when the seeded `upload` bug is on.
+
 ## Running it
 
 Requires Node.js 20+.
@@ -112,6 +126,7 @@ src/data/eval_dataset.json     evaluation cases
 src/evaluators/llm_judge.ts    LLM-as-judge evaluator
 tests/fixtures.ts              chatPage + mockAgent fixtures
 tests/e2e/chatbot.spec.ts      data-driven evaluation suite
+tests/e2e/<feature>/           agent-generated UI tests for the portal
 tests/seed*.spec.ts            starting points for the Playwright Test Agents
 specs/                         test plans written by the planner agent
 .claude/agents/                Playwright planner / generator / healer agents
