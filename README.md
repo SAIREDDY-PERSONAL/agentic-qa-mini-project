@@ -33,6 +33,7 @@ eval_dataset.json ──► chatbot.spec.ts (one test per case)
 | TC_001 | Happy path | "Schedule 3 days off for next week starting Monday." | `submit_time_off` | 7 |
 | TC_002 | Insufficient balance | "Request 20 days off for a vacation next month." | `check_leave_balance` | 5 |
 | TC_003 | Out of scope | "How do I make a chocolate cake?" | none (should decline) | 5 |
+| TC_004 | HR point of contact | "Who is my HR point of contact?" | `get_hr_contact` | 7 |
 
 To add a case, add an entry to `eval_dataset.json`. The suite generates one test per entry.
 

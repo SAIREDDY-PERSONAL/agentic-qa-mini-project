@@ -32,5 +32,18 @@
     "mockReply": "I am an enterprise HR assistant and can only assist with workplace requests like PTO, benefits, or employee profiles.",
     "minScore": 5.0,
     "expectGrounded": false
+  },
+  {
+    "id": "TC_004",
+    "category": "Happy Path - HR Point of Contact",
+    "prompt": "Who is my HR point of contact?",
+    "context": "Employee ID: 1042. Department: Engineering.",
+    "expectedTool": "get_hr_contact",
+    "mockToolCalls": [
+      { "toolName": "get_hr_contact", "args": { "employeeId": "1042" }, "result": { "name": "Priya Sharma", "title": "HR Business Partner, Engineering", "email": "priya.sharma@acme-hr.example", "phone": "ext. 4471" } }
+    ],
+    "mockReply": "Your HR point of contact is Priya Sharma, HR Business Partner for Engineering. You can reach her at priya.sharma@acme-hr.example or on ext. 4471.",
+    "minScore": 7.0,
+    "expectGrounded": true
   }
 ]
