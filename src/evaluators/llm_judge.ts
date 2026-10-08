@@ -1,5 +1,10 @@
 import { ChatOllama } from "@langchain/ollama";
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatAnthropic } from "@langchain/anthropic";
 import { z } from "zod";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const ChatbotEvalSchema = z.object({
   score: z.number().min(0).max(10).describe("An INTEGER score from 0 to 10 evaluating response appropriateness."),
@@ -10,11 +15,35 @@ export const ChatbotEvalSchema = z.object({
 
 export type ChatbotEval = z.infer<typeof ChatbotEvalSchema>;
 
-const judgeModel = new ChatOllama({
-  baseUrl: "http://localhost:11434",
-  model: "llama3.2",
-  temperature: 0,
-}).withStructuredOutput(ChatbotEvalSchema);
+// Dynamic LLM Judge Provider Selection: Claude -> OpenAI -> Local Ollama Fallback
+function createJudgeModel() {
+  if (process.env.ANTHROPIC_API_KEY) {
+    console.log("Using LLM Judge Provider: Anthropic Claude (claude-3-5-haiku)");
+    return new ChatAnthropic({
+      modelName: "claude-3-5-haiku-20241022",
+      temperature: 0,
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    }).withStructuredOutput(ChatbotEvalSchema);
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    console.log("Using LLM Judge Provider: OpenAI (gpt-4o-mini)");
+    return new ChatOpenAI({
+      modelName: "gpt-4o-mini",
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }).withStructuredOutput(ChatbotEvalSchema);
+  }
+
+  console.log("Using LLM Judge Provider: Local Ollama (llama3.2)");
+  return new ChatOllama({
+    baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+    model: process.env.OLLAMA_MODEL || "llama3.2",
+    temperature: 0,
+  }).withStructuredOutput(ChatbotEvalSchema);
+}
+
+const judgeModel = createJudgeModel();
 
 export async function judgeChatbotResponse(params: {
   userPrompt: string;
