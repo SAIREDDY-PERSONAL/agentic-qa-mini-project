@@ -25,6 +25,9 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      - name: Type-check
+        run: npm run typecheck
+
       - name: Run Playwright & LLM Evaluation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
