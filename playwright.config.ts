@@ -11,6 +11,10 @@ export default defineConfig({
     baseURL: "http://localhost:8080",
     headless: true,
     browserName: "chromium",
+    // Screenshot at the end of every test, shown in the HTML report (and used by the judge)
+    screenshot: "on",
+    // Full trace for failed tests, for debugging and the healer agent
+    trace: "retain-on-failure",
   },
   webServer: {
     command: "node app/server.mjs",
