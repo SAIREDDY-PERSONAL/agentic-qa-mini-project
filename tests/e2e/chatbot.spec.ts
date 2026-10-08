@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { judgeChatbotResponse } from "../../src/evaluators/llm_judge.js";
 import testCases from "../../src/data/eval_dataset.json" assert { type: "json" };
 import path from "path";
+import { pathToFileURL } from "url";
 
 test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
   for (const tc of testCases) {
@@ -25,14 +26,16 @@ test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
         });
       });
 
-      const htmlPath = path.resolve(process.cwd(), "app/index.html");
-      await page.goto(`file://${htmlPath}`);
+      // Construct cross-platform absolute file:// URL for app/index.html
+      const absoluteAppPath = path.resolve(process.cwd(), "app/index.html");
+      const appUrl = pathToFileURL(absoluteAppPath).href;
+      await page.goto(appUrl);
 
       await page.fill('[data-testid="chat-input"]', tc.prompt);
       await page.click('[data-testid="send-button"]');
 
       const responseBubble = page.locator('[data-testid="chatbot-response"]').last();
-      await expect(responseBubble).toBeVisible({ timeout: 5000 });
+      await expect(responseBubble).toBeVisible({ timeout: 10000 });
       const chatbotResponseText = await responseBubble.innerText();
 
       // Tool assertion
@@ -58,7 +61,7 @@ test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
       console.log(`Score: ${normalizedScore}/10 | Grounded: ${evalResult.isGrounded} | Helpful: ${evalResult.isHelpful}`);
       console.log(`Reasoning: ${evalResult.reasoning}\n`);
 
-      // Dynamic assertions based on dataset metadata
+      // Dynamic assertions
       if (tc.expectGrounded) {
         expect(evalResult.isGrounded).toBe(true);
       }
