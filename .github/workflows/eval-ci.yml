@@ -1,40 +1,35 @@
-name: Agentic AI Test Suite & LLM Evaluation
+name: AI Agent Evaluation Suite
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
-  test:
-    name: Run Playwright & LLM Evaluation
+  eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Execute Agentic Test Suite
+      - name: Run Playwright & LLM Evaluation
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: npx playwright test
 
-      - name: Upload HTML Test Report Artifact
+      - name: Upload Playwright Test Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
