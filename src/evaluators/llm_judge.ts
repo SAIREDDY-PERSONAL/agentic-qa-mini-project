@@ -15,12 +15,11 @@ export const ChatbotEvalSchema = z.object({
 
 export type ChatbotEval = z.infer<typeof ChatbotEvalSchema>;
 
-// Dynamic LLM Judge Provider Selection: Claude -> OpenAI -> Local Ollama Fallback
 function createJudgeModel() {
   if (process.env.ANTHROPIC_API_KEY) {
-    console.log("Using LLM Judge Provider: Anthropic Claude");
+    console.log("Using LLM Judge Provider: Anthropic Claude (claude-3-5-haiku-20241022)");
     return new ChatAnthropic({
-      modelName: "claude-3-5-haiku", // Updated clean model identifier
+      modelName: "claude-3-5-haiku-20241022", // Precise dated model name
       temperature: 0,
       apiKey: process.env.ANTHROPIC_API_KEY,
     }).withStructuredOutput(ChatbotEvalSchema);
