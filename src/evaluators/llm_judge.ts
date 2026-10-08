@@ -22,8 +22,7 @@ function createJudgeModel() {
     console.log(`Using LLM Judge Provider: Anthropic Claude (${anthropicModel})`);
 
     return new ChatAnthropic({
-      modelName: anthropicModel,
-      temperature: 0,
+      modelName: anthropicModel, // temperature is not supported by current Claude models
       apiKey: process.env.ANTHROPIC_API_KEY,
       clientOptions: {
         defaultHeaders: {
