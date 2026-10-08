@@ -5,3 +5,5 @@ blob-report/
 playwright/.cache/
 .env
 .DS_Store
+# Playwright MCP scratch output (console logs, page snapshots)
+.playwright-mcp/
