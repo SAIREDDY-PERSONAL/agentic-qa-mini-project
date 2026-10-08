@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Time Off - Acme HR Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main>
+    <h1>Time off</h1>
+    <section class="card" aria-labelledby="request-title">
+      <h2 id="request-title">Request time off</h2>
+      <p class="muted">Available balance: <strong data-testid="pto-available"></strong></p>
+      <form id="time-off-form" novalidate>
+        <label for="leave-type">Leave type</label>
+        <select id="leave-type" name="leaveType" data-testid="leave-type">
+          <option value="">Select a type</option>
+          <option>Vacation</option>
+          <option>Sick</option>
+          <option>Personal</option>
+        </select>
+        <div class="row">
+          <div>
+            <label for="start-date">Start date</label>
+            <input id="start-date" name="startDate" type="date" data-testid="start-date">
+          </div>
+          <div>
+            <label for="end-date">End date</label>
+            <input id="end-date" name="endDate" type="date" data-testid="end-date">
+          </div>
+        </div>
+        <label for="reason">Reason (optional)</label>
+        <textarea id="reason" name="reason" rows="2" data-testid="reason"></textarea>
+        <button type="submit" data-testid="submit-time-off">Submit request</button>
+      </form>
+      <div id="time-off-message" role="status" data-testid="time-off-message" hidden></div>
+    </section>
+
+    <section class="card" aria-labelledby="history-title">
+      <h2 id="history-title">My requests</h2>
+      <p id="no-requests" class="muted" data-testid="no-requests">You have no time-off requests.</p>
+      <table id="requests-table" data-testid="requests-table" hidden>
+        <thead><tr><th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth, store, ptoSummary, showMessage, escapeHtml } from "/js/app.js";
+
+    await requireAuth();
+    const form = document.getElementById("time-off-form");
+    const message = document.getElementById("time-off-message");
+
+    // Weekdays between two ISO dates, inclusive
+    function businessDays(start, end) {
+      let days = 0;
+      for (const d = new Date(`${start}T00:00:00`); d <= new Date(`${end}T00:00:00`); d.setDate(d.getDate() + 1)) {
+        if (d.getDay() !== 0 && d.getDay() !== 6) days++;
+      }
+      return days;
+    }
+
+    async function render() {
+      const pto = await ptoSummary();
+      document.querySelector("[data-testid=pto-available]").textContent = `${pto.available} days`;
+      const table = document.getElementById("requests-table");
+      table.hidden = pto.requests.length === 0;
+      document.getElementById("no-requests").hidden = pto.requests.length > 0;
+      table.querySelector("tbody").innerHTML = pto.requests.map((r) => `
+        <tr><td>${escapeHtml(r.type)}</td><td>${r.startDate}</td><td>${r.endDate}</td><td>${r.days}</td>
+        <td class="status-pending">${r.status}</td></tr>`).join("");
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const type = form.leaveType.value;
+      const startDate = form.startDate.value;
+      const endDate = form.endDate.value;
+
+      if (!type || !startDate || !endDate) {
+        return showMessage(message, "Select a leave type, start date, and end date.", "error");
+      }
+      if (endDate < startDate) {
+        return showMessage(message, "End date must be on or after the start date.", "error");
+      }
+      const days = businessDays(startDate, endDate);
+      if (days === 0) {
+        return showMessage(message, "The selected dates fall on a weekend. Choose at least one weekday.", "error");
+      }
+      const { available } = await ptoSummary();
+      if (days > available) {
+        return showMessage(
+          message,
+          `Insufficient PTO balance: you requested ${days} days but only ${available} are available.`,
+          "error",
+        );
+      }
+
+      const requests = store.get("timeOffRequests", []);
+      requests.push({ type, startDate, endDate, days, reason: form.reason.value.trim(), status: "Pending" });
+      store.set("timeOffRequests", requests);
+      form.reset();
+      showMessage(message, `Time-off request submitted for ${days} day${days === 1 ? "" : "s"}. Status: Pending approval.`, "success");
+      await render();
+    });
+
+    await render();
+  </script>
+</body>
+</html>

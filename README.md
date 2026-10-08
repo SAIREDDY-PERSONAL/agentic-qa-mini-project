@@ -21,7 +21,7 @@ eval_dataset.json ──► chatbot.spec.ts (one test per case)
                                             └─ assert score ≥ minScore, grounded if required
 ```
 
-- **Chat UI** (`app/index.html`): a minimal chat page that posts to `/api/agent/run` and renders the reply. It's served locally by `http-server`.
+- **Demo HR portal** (`app/`): a small HR site served by `app/server.mjs`, with no dependencies. See [Demo HR portal](#demo-hr-portal) below. The chatbot suite uses its HR Assistant page (`/chat.html`) and mocks `/api/agent/run`, so the judge sees fixed replies.
 - **Fixtures** (`tests/fixtures.ts`): `chatPage` is a page object for the chat UI. `mockAgent` mocks the agent API and records the tool calls it returned.
 - **LLM judge** (`src/evaluators/llm_judge.ts`): built with LangChain. It returns a verdict validated against a Zod schema: `score`, `isGrounded`, `isHelpful` and `reasoning`. The provider is picked from your environment: Anthropic Claude if `ANTHROPIC_API_KEY` is set, otherwise OpenAI if `OPENAI_API_KEY` is set, otherwise a local Ollama model.
 - **Dataset** (`src/data/eval_dataset.json`): each case defines the prompt, context, mocked tool calls and their results, the expected tool, a minimum score, and whether the reply must be grounded.
@@ -35,6 +35,24 @@ eval_dataset.json ──► chatbot.spec.ts (one test per case)
 | TC_003 | Out of scope | "How do I make a chocolate cake?" | none (should decline) | 5 |
 
 To add a case, add an entry to `eval_dataset.json`. The suite generates one test per entry.
+
+## Demo HR portal
+
+Run `node app/server.mjs` and open http://localhost:8080. Sign in with `demo` / `demo123`.
+
+| Page | What it does |
+|---|---|
+| Login | Checks credentials against `/api/login`, shows an error for wrong ones, and supports logout |
+| Dashboard | Welcome message, PTO available, pending requests and document count |
+| Time off | Leave request form: blocks insufficient balance, end-before-start dates and weekend-only ranges; lists pending requests |
+| Documents | Upload PDF, PNG or JPG files up to 2 MB, with type and size checks, and a list of your documents |
+| Directory | Search employees by name or department |
+| My profile | Edit phone and address, with format checks and a save confirmation |
+| HR Assistant | Chat backed by a keyword-based fake agent (`/api/agent/run`) that answers time-off and HR point-of-contact questions |
+
+User data (requests, documents, profile edits) lives in `sessionStorage`, so every browser session and every test starts clean.
+
+**Seeded bugs.** Set `BUGS` to break a feature on purpose and show that tests catch it. For example, `BUGS=upload node app/server.mjs` makes uploads show the success message without saving the document.
 
 ## Running it
 
@@ -57,6 +75,8 @@ npm run typecheck      # strict TypeScript check
 | `ANTHROPIC_WORKSPACE_ID` | Optional Anthropic workspace header |
 | `OPENAI_API_KEY` | Use OpenAI `gpt-4o-mini` if no Anthropic key is set |
 | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | Local fallback, default `http://localhost:11434` and `llama3.2` |
+| `DEMO_USERNAME`, `DEMO_PASSWORD` | Portal login, default `demo` / `demo123`. Tests sign in with the same values |
+| `BUGS` | Comma-separated seeded bugs to switch on, e.g. `upload` |
 
 ### Sample judge output
 
@@ -75,7 +95,8 @@ GitHub Actions (`.github/workflows/eval-ci.yml`) runs on every push and pull req
 ## Project structure
 
 ```
-app/index.html                 chat UI under test
+app/server.mjs                 demo HR portal server (static pages + fake APIs)
+app/public/                    portal pages, scripts, styles and directory data
 src/data/eval_dataset.json     evaluation cases
 src/evaluators/llm_judge.ts    LLM-as-judge evaluator
 tests/fixtures.ts              chatPage + mockAgent fixtures

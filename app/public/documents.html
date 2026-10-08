@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documents - Acme HR Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main>
+    <h1>Documents</h1>
+    <section class="card" aria-labelledby="upload-title">
+      <h2 id="upload-title">Upload a document</h2>
+      <p class="muted">Accepted formats: PDF, PNG, JPG. Maximum size: 2 MB.</p>
+      <form id="upload-form" novalidate>
+        <label for="document-type">Document type</label>
+        <select id="document-type" name="documentType" data-testid="document-type">
+          <option value="">Select a type</option>
+          <option>Government ID</option>
+          <option>W-4 Tax Form</option>
+          <option>Certification</option>
+        </select>
+        <label for="document-file">File</label>
+        <input id="document-file" name="documentFile" type="file" accept=".pdf,.png,.jpg,.jpeg" data-testid="document-file">
+        <button type="submit" data-testid="upload-button">Upload</button>
+      </form>
+      <div id="upload-message" role="status" data-testid="upload-message" hidden></div>
+    </section>
+
+    <section class="card" aria-labelledby="files-title">
+      <h2 id="files-title">My documents</h2>
+      <p id="no-documents" class="muted" data-testid="no-documents">No documents uploaded yet.</p>
+      <table id="documents-table" data-testid="documents-table" hidden>
+        <thead><tr><th>File name</th><th>Type</th><th>Size</th><th>Uploaded</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth, store, bugEnabled, showMessage, escapeHtml } from "/js/app.js";
+
+    await requireAuth();
+    const MAX_BYTES = 2 * 1024 * 1024;
+    const ALLOWED_EXTENSIONS = ["pdf", "png", "jpg", "jpeg"];
+    const form = document.getElementById("upload-form");
+    const message = document.getElementById("upload-message");
+
+    function formatSize(bytes) {
+      return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function render() {
+      const documents = store.get("documents", []);
+      const table = document.getElementById("documents-table");
+      table.hidden = documents.length === 0;
+      document.getElementById("no-documents").hidden = documents.length > 0;
+      table.querySelector("tbody").innerHTML = documents.map((d) => `
+        <tr><td>${escapeHtml(d.name)}</td><td>${escapeHtml(d.type)}</td><td>${formatSize(d.size)}</td><td>${d.uploadedOn}</td></tr>`).join("");
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const type = form.documentType.value;
+      const file = form.documentFile.files[0];
+
+      if (!type) return showMessage(message, "Select a document type.", "error");
+      if (!file) return showMessage(message, "Choose a file to upload.", "error");
+      const extension = file.name.split(".").pop().toLowerCase();
+      if (!ALLOWED_EXTENSIONS.includes(extension)) {
+        return showMessage(message, "Unsupported file type. Upload a PDF, PNG, or JPG.", "error");
+      }
+      if (file.size > MAX_BYTES) {
+        return showMessage(message, "File is too large. Maximum size is 2 MB.", "error");
+      }
+
+      // Seeded bug: report success without saving the document
+      if (!(await bugEnabled("upload"))) {
+        const documents = store.get("documents", []);
+        documents.push({ name: file.name, type, size: file.size, uploadedOn: new Date().toISOString().slice(0, 10) });
+        store.set("documents", documents);
+      }
+      form.reset();
+      showMessage(message, `Uploaded ${file.name} successfully.`, "success");
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

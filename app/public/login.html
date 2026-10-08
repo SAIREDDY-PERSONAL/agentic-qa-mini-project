@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in - Acme HR Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main>
+    <div class="card login-card">
+      <h1>Sign in to Acme HR</h1>
+      <div id="logged-out" class="message success" role="status" hidden>You have been logged out.</div>
+      <form id="login-form" novalidate>
+        <label for="username">Username</label>
+        <input id="username" name="username" autocomplete="username" data-testid="username-input" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" data-testid="password-input" required>
+        <button type="submit" data-testid="login-button">Sign in</button>
+      </form>
+      <div id="login-error" class="message error" role="alert" data-testid="login-error" hidden></div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { store, showMessage } from "/js/app.js";
+
+    const params = new URLSearchParams(location.search);
+    if (params.has("loggedOut")) document.getElementById("logged-out").hidden = false;
+
+    const form = document.getElementById("login-form");
+    const error = document.getElementById("login-error");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const username = form.username.value.trim();
+      const password = form.password.value;
+      if (!username || !password) {
+        showMessage(error, "Enter your username and password.", "error");
+        return;
+      }
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        showMessage(error, data.error, "error");
+        return;
+      }
+      store.set("session", data.user);
+      // Only follow same-site paths, never an external URL
+      const next = params.get("next");
+      location.assign(next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard.html");
+    });
+  </script>
+</body>
+</html>

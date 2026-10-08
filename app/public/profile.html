@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Profile - Acme HR Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main>
+    <h1>My profile</h1>
+    <section class="card">
+      <form id="profile-form" novalidate>
+        <div class="row">
+          <div>
+            <label for="full-name">Full name</label>
+            <input id="full-name" data-testid="profile-name" readonly>
+          </div>
+          <div>
+            <label for="employee-id">Employee ID</label>
+            <input id="employee-id" data-testid="profile-employee-id" readonly>
+          </div>
+        </div>
+        <label for="email">Work email</label>
+        <input id="email" data-testid="profile-email" readonly>
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" type="tel" placeholder="e.g. 555-123-4567" data-testid="profile-phone">
+        <label for="address">Home address</label>
+        <textarea id="address" name="address" rows="2" data-testid="profile-address"></textarea>
+        <button type="submit" data-testid="save-profile">Save changes</button>
+      </form>
+      <div id="profile-message" role="status" data-testid="profile-message" hidden></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth, store, showMessage } from "/js/app.js";
+
+    const user = await requireAuth();
+    const form = document.getElementById("profile-form");
+    const message = document.getElementById("profile-message");
+    const profile = store.get("profile", { phone: "555-010-1042", address: "12 Main St, New York, NY 10001" });
+
+    document.getElementById("full-name").value = user.name;
+    document.getElementById("employee-id").value = user.employeeId;
+    document.getElementById("email").value = user.email;
+    form.phone.value = profile.phone;
+    form.address.value = profile.address;
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const phone = form.phone.value.trim();
+      const address = form.address.value.trim();
+      if (!/^\d{3}-\d{3}-\d{4}$/.test(phone)) {
+        return showMessage(message, "Enter the phone number in the format 555-123-4567.", "error");
+      }
+      if (!address) return showMessage(message, "Home address is required.", "error");
+      store.set("profile", { phone, address });
+      showMessage(message, "Profile updated successfully.", "success");
+    });
+  </script>
+</body>
+</html>
