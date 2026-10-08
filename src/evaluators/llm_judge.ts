@@ -18,10 +18,11 @@ export type ChatbotEval = z.infer<typeof ChatbotEvalSchema>;
 function createJudgeModel() {
   if (process.env.ANTHROPIC_API_KEY) {
     const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID || "wrkspc_01FDNRYEt7gkcuCyNJY8T988";
-    console.log(`Using LLM Judge Provider: Anthropic Claude (claude-3-haiku-20240307)`);
-    
+    const anthropicModel = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
+    console.log(`Using LLM Judge Provider: Anthropic Claude (${anthropicModel})`);
+
     return new ChatAnthropic({
-      modelName: "claude-3-haiku-20240307", // Broadly supported stable snapshot
+      modelName: anthropicModel,
       temperature: 0,
       apiKey: process.env.ANTHROPIC_API_KEY,
       clientOptions: {
