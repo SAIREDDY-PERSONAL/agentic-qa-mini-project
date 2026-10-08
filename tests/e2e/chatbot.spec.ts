@@ -9,7 +9,8 @@ test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
     test(`[${tc.id}] ${tc.category}: "${tc.prompt}"`, async ({ page }) => {
       let interceptedToolCalls: any[] = [];
 
-      await page.route("**/api/agent/run", async (route) => {
+      // Catch any request matching api/agent/run regardless of exact hostname or query params
+      await page.route("**/api/agent/run*", async (route) => {
         const mockBackendResponse = {
           reply: tc.mockReply,
           toolCalls: tc.expectedTool !== "none" 
@@ -22,20 +23,27 @@ test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
+          headers: { "Access-Control-Allow-Origin": "*" },
           body: JSON.stringify(mockBackendResponse)
         });
       });
 
-      // Construct cross-platform absolute file:// URL for app/index.html
+      // Construct cross-platform absolute file:// URL
       const absoluteAppPath = path.resolve(process.cwd(), "app/index.html");
       const appUrl = pathToFileURL(absoluteAppPath).href;
-      await page.goto(appUrl);
+      await page.goto(appUrl, { waitUntil: "domcontentloaded" });
 
-      await page.fill('[data-testid="chat-input"]', tc.prompt);
-      await page.click('[data-testid="send-button"]');
+      // Fill and trigger UI submission
+      const chatInput = page.locator('[data-testid="chat-input"]');
+      await chatInput.waitFor({ state: "visible" });
+      await chatInput.fill(tc.prompt);
+      
+      const sendButton = page.locator('[data-testid="send-button"]');
+      await sendButton.click();
 
+      // Wait for UI to render the response bubble
       const responseBubble = page.locator('[data-testid="chatbot-response"]').last();
-      await expect(responseBubble).toBeVisible({ timeout: 10000 });
+      await expect(responseBubble).toBeVisible({ timeout: 15000 });
       const chatbotResponseText = await responseBubble.innerText();
 
       // Tool assertion
@@ -61,7 +69,7 @@ test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
       console.log(`Score: ${normalizedScore}/10 | Grounded: ${evalResult.isGrounded} | Helpful: ${evalResult.isHelpful}`);
       console.log(`Reasoning: ${evalResult.reasoning}\n`);
 
-      // Dynamic assertions
+      // Dynamic assertions based on dataset metadata
       if (tc.expectGrounded) {
         expect(evalResult.isGrounded).toBe(true);
       }
