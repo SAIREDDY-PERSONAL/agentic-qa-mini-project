@@ -11,9 +11,9 @@ test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
       await page.route("**/api/agent/run*", async (route) => {
         const mockBackendResponse = {
           reply: tc.mockReply,
-          toolCalls: tc.expectedTool !== "none" 
+          toolCalls: tc.mockToolCalls ?? (tc.expectedTool !== "none"
             ? [{ toolName: tc.expectedTool, args: { employeeId: "1042" } }]
-            : []
+            : [])
         };
 
         interceptedToolCalls = mockBackendResponse.toolCalls;

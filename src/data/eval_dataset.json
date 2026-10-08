@@ -5,6 +5,10 @@
     "prompt": "Schedule 3 days off for next week starting Monday.",
     "context": "Employee ID: 1042. Current PTO Balance: 15 days.",
     "expectedTool": "submit_time_off",
+    "mockToolCalls": [
+      { "toolName": "check_leave_balance", "args": { "employeeId": "1042" }, "result": { "ptoBalanceDays": 15 } },
+      { "toolName": "submit_time_off", "args": { "employeeId": "1042", "type": "vacation", "startDate": "next Monday", "days": 3 }, "result": { "status": "submitted" } }
+    ],
     "mockReply": "I checked your PTO balance (15 days remaining) and submitted a vacation request for 3 days starting next Monday.",
     "minScore": 7.0,
     "expectGrounded": true
