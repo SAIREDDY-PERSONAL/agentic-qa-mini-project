@@ -17,9 +17,9 @@ export type ChatbotEval = z.infer<typeof ChatbotEvalSchema>;
 
 function createJudgeModel() {
   if (process.env.ANTHROPIC_API_KEY) {
-    console.log("Using LLM Judge Provider: Anthropic Claude (claude-3-5-haiku-20241022)");
+    console.log("Using LLM Judge Provider: Anthropic Claude (claude-3-5-sonnet-20241022)");
     return new ChatAnthropic({
-      modelName: "claude-3-5-haiku-20241022", // Precise dated model name
+      modelName: "claude-3-5-sonnet-20241022", // Standard accessible model snapshot
       temperature: 0,
       apiKey: process.env.ANTHROPIC_API_KEY,
     }).withStructuredOutput(ChatbotEvalSchema);
