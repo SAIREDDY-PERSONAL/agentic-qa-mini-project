@@ -55,6 +55,16 @@ User data (requests, documents, profile edits) lives in `sessionStorage`, so eve
 
 **Seeded bugs.** Set `BUGS` to break a feature on purpose and show that tests catch it. For example, `BUGS=upload node app/server.mjs` makes uploads show the success message without saving the document.
 
+## Playwright Test Agents
+
+New UI tests are created with Playwright's official [Test Agents](https://playwright.dev/docs/test-agents), which run as Claude Code subagents (`.claude/agents/`) through the `playwright-test` MCP server (`.mcp.json`):
+
+- **Planner** explores the running portal and writes a Markdown test plan to `specs/`.
+- **Generator** replays each plan step in a real browser and writes the test to `tests/e2e/`.
+- **Healer** runs failing tests, debugs them and fixes them.
+
+The agents start from a seed test: `tests/seed.spec.ts` signs in through the API, and `tests/seed-logged-out.spec.ts` starts on the login page. The seed also shows the conventions generated tests should follow. Plans and generated tests are reviewed in a PR like any other code. See [`specs/README.md`](specs/README.md) for the workflow.
+
 ## Running it
 
 Requires Node.js 20+.
@@ -102,6 +112,9 @@ src/data/eval_dataset.json     evaluation cases
 src/evaluators/llm_judge.ts    LLM-as-judge evaluator
 tests/fixtures.ts              chatPage + mockAgent fixtures
 tests/e2e/chatbot.spec.ts      data-driven evaluation suite
+tests/seed*.spec.ts            starting points for the Playwright Test Agents
+specs/                         test plans written by the planner agent
+.claude/agents/                Playwright planner / generator / healer agents
 playwright.config.ts           Playwright config + local web server
 .github/workflows/eval-ci.yml  CI pipeline
 ```
