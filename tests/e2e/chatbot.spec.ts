@@ -1,44 +1,21 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../fixtures.js";
 import { judgeChatbotResponse } from "../../src/evaluators/llm_judge.js";
-import testCases from "../../src/data/eval_dataset.json" assert { type: "json" };
+import testCases from "../../src/data/eval_dataset.json" with { type: "json" };
 
 test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
   for (const tc of testCases) {
-    test(`[${tc.id}] ${tc.category}: "${tc.prompt}"`, async ({ page }) => {
-      let interceptedToolCalls: any[] = [];
+    test(`[${tc.id}] ${tc.category}: "${tc.prompt}"`, async ({ chatPage, mockAgent }) => {
+      await mockAgent.respondWith(
+        tc.mockReply,
+        tc.mockToolCalls ?? (tc.expectedTool !== "none"
+          ? [{ toolName: tc.expectedTool, args: { employeeId: "1042" } }]
+          : [])
+      );
 
-      // Intercept API calls cleanly over HTTP
-      await page.route("**/api/agent/run*", async (route) => {
-        const mockBackendResponse = {
-          reply: tc.mockReply,
-          toolCalls: tc.mockToolCalls ?? (tc.expectedTool !== "none"
-            ? [{ toolName: tc.expectedTool, args: { employeeId: "1042" } }]
-            : [])
-        };
-
-        interceptedToolCalls = mockBackendResponse.toolCalls;
-
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(mockBackendResponse)
-        });
-      });
-
-      // Navigate via HTTP local server
-      await page.goto("/");
-
-      const chatInput = page.locator('[data-testid="chat-input"]');
-      await chatInput.waitFor({ state: "visible" });
-      await chatInput.fill(tc.prompt);
-      
-      const sendButton = page.locator('[data-testid="send-button"]');
-      await sendButton.click();
-
-      // Wait for UI response bubble
-      const responseBubble = page.locator('[data-testid="chatbot-response"]').last();
-      await expect(responseBubble).toBeVisible({ timeout: 15000 });
-      const chatbotResponseText = await responseBubble.innerText();
+      await chatPage.goto();
+      await chatPage.send(tc.prompt);
+      const chatbotResponseText = await chatPage.lastResponseText();
+      const interceptedToolCalls = mockAgent.toolCalls;
 
       // Tool assertion
       if (tc.expectedTool !== "none") {
