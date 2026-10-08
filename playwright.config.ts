@@ -13,7 +13,7 @@ export default defineConfig({
     browserName: "chromium",
   },
   webServer: {
-    command: "npx http-server app -p 8080 -c-1",
+    command: "node app/server.mjs",
     url: "http://localhost:8080",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

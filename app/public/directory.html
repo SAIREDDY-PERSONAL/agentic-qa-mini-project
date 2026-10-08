@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Directory - Acme HR Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main>
+    <h1>Employee directory</h1>
+    <section class="card">
+      <label for="search">Search by name or department</label>
+      <input id="search" type="search" placeholder="e.g. Priya or Engineering" data-testid="directory-search">
+      <p class="muted" role="status" data-testid="result-count"></p>
+      <table data-testid="directory-table">
+        <thead><tr><th>Name</th><th>Title</th><th>Department</th><th>Email</th><th>Location</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted" data-testid="no-results" hidden>No employees found.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth, escapeHtml } from "/js/app.js";
+
+    await requireAuth();
+    const employees = await fetch("/data/employees.json").then((r) => r.json());
+    const search = document.getElementById("search");
+
+    function render() {
+      const query = search.value.trim().toLowerCase();
+      const matches = employees.filter(
+        (e) => e.name.toLowerCase().includes(query) || e.department.toLowerCase().includes(query),
+      );
+      document.querySelector("[data-testid=directory-table] tbody").innerHTML = matches.map((e) => `
+        <tr><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.title)}</td><td>${escapeHtml(e.department)}</td>
+        <td>${escapeHtml(e.email)}</td><td>${escapeHtml(e.location)}</td></tr>`).join("");
+      document.querySelector("[data-testid=result-count]").textContent =
+        `Showing ${matches.length} of ${employees.length} employees`;
+      document.querySelector("[data-testid=no-results]").hidden = matches.length > 0;
+    }
+
+    search.addEventListener("input", render);
+    render();
+  </script>
+</body>
+</html>

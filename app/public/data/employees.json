@@ -1,0 +1,12 @@
+[
+  { "name": "Alex Morgan", "title": "Software Engineer", "department": "Engineering", "email": "alex.morgan@acme-hr.example", "location": "New York" },
+  { "name": "Priya Sharma", "title": "HR Business Partner", "department": "Human Resources", "email": "priya.sharma@acme-hr.example", "location": "New York" },
+  { "name": "Daniel Kim", "title": "Engineering Manager", "department": "Engineering", "email": "daniel.kim@acme-hr.example", "location": "Austin" },
+  { "name": "Maria Lopez", "title": "Payroll Specialist", "department": "Finance", "email": "maria.lopez@acme-hr.example", "location": "Chicago" },
+  { "name": "James Carter", "title": "Recruiter", "department": "Human Resources", "email": "james.carter@acme-hr.example", "location": "Remote" },
+  { "name": "Aisha Bello", "title": "QA Engineer", "department": "Engineering", "email": "aisha.bello@acme-hr.example", "location": "Austin" },
+  { "name": "Tom Nguyen", "title": "Financial Analyst", "department": "Finance", "email": "tom.nguyen@acme-hr.example", "location": "Chicago" },
+  { "name": "Sofia Rossi", "title": "Product Designer", "department": "Design", "email": "sofia.rossi@acme-hr.example", "location": "Remote" },
+  { "name": "Ravi Patel", "title": "Benefits Coordinator", "department": "Human Resources", "email": "ravi.patel@acme-hr.example", "location": "New York" },
+  { "name": "Emma Wilson", "title": "Sales Manager", "department": "Sales", "email": "emma.wilson@acme-hr.example", "location": "Boston" }
+]

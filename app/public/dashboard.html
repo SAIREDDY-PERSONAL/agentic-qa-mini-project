@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard - Acme HR Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main>
+    <h1 id="welcome" data-testid="welcome-heading"></h1>
+    <div class="cards">
+      <section class="card" aria-labelledby="pto-title">
+        <h2 id="pto-title">PTO available</h2>
+        <p class="stat" data-testid="pto-available"></p>
+        <p class="muted"><span data-testid="pto-used"></span> days requested of <span data-testid="pto-total"></span></p>
+        <a href="/time-off.html">Request time off</a>
+      </section>
+      <section class="card" aria-labelledby="requests-title">
+        <h2 id="requests-title">Pending requests</h2>
+        <p class="stat" data-testid="pending-count"></p>
+        <a href="/time-off.html">View requests</a>
+      </section>
+      <section class="card" aria-labelledby="docs-title">
+        <h2 id="docs-title">Documents on file</h2>
+        <p class="stat" data-testid="document-count"></p>
+        <a href="/documents.html">Upload a document</a>
+      </section>
+    </div>
+    <section class="card" aria-labelledby="help-title">
+      <h2 id="help-title">Need help?</h2>
+      <p class="muted">Ask the <a href="/chat.html">HR Assistant</a> about time off or who your HR contact is.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth, store, ptoSummary } from "/js/app.js";
+
+    const user = await requireAuth();
+    document.getElementById("welcome").textContent = `Welcome, ${user.name}`;
+
+    const pto = await ptoSummary();
+    document.querySelector("[data-testid=pto-available]").textContent = `${pto.available} days`;
+    document.querySelector("[data-testid=pto-used]").textContent = pto.used;
+    document.querySelector("[data-testid=pto-total]").textContent = pto.total;
+    document.querySelector("[data-testid=pending-count]").textContent =
+      pto.requests.filter((r) => r.status === "Pending").length;
+    document.querySelector("[data-testid=document-count]").textContent = store.get("documents", []).length;
+  </script>
+</body>
+</html>

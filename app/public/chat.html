@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HR Assistant - Acme HR Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main>
+    <h1>HR Assistant</h1>
+    <section class="card">
+      <div id="chat-history" aria-live="polite"></div>
+      <form class="input-group" id="chat-form">
+        <label for="chat-input" hidden>Message</label>
+        <input type="text" id="chat-input" data-testid="chat-input" placeholder="e.g. Who is my HR point of contact?" />
+        <button type="submit" id="send-button" data-testid="send-button">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from "/js/app.js";
+
+    await requireAuth();
+    const input = document.getElementById("chat-input");
+    const history = document.getElementById("chat-history");
+
+    function addBubble(text, kind) {
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${kind}`;
+      if (kind === "bot") bubble.setAttribute("data-testid", "chatbot-response");
+      bubble.innerText = text;
+      history.appendChild(bubble);
+    }
+
+    document.getElementById("chat-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const userText = input.value.trim();
+      if (!userText) return;
+      input.value = "";
+      addBubble(userText, "user");
+
+      const response = await fetch("/api/agent/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: userText }),
+      });
+      const data = await response.json();
+      addBubble(data.reply, "bot");
+    });
+  </script>
+</body>
+</html>
