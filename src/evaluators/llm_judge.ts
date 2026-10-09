@@ -26,18 +26,15 @@ export function judgeProvider(): JudgeProvider {
 
 export function createChatModel() {
   if (process.env.ANTHROPIC_API_KEY) {
-    const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID || "wrkspc_01FDNRYEt7gkcuCyNJY8T988";
+    const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
     const anthropicModel = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
     console.log(`Using LLM Judge Provider: Anthropic Claude (${anthropicModel})`);
 
     return new ChatAnthropic({
       modelName: anthropicModel, // temperature is not supported by current Claude models
       apiKey: process.env.ANTHROPIC_API_KEY,
-      clientOptions: {
-        defaultHeaders: {
-          "anthropic-workspace-id": workspaceId,
-        },
-      },
+      // The workspace header is optional and only sent when ANTHROPIC_WORKSPACE_ID is set
+      clientOptions: workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : undefined,
     });
   }
 

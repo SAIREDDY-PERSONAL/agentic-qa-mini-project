@@ -34,16 +34,17 @@ test.describe("Agentic HCM Chatbot - Batch Evaluation Suite", () => {
         chatbotResponseText,
       });
 
-      const normalizedScore = evalResult.score <= 1.0 ? evalResult.score * 10 : evalResult.score;
+      // The schema asks for 0-10. (A former 0-1 rescaling turned a 1/10 into a passing 10/10.)
+      const score = evalResult.score;
 
       console.log(`\n--- [${tc.id}] Evaluation Report ---`);
-      console.log(`Score: ${normalizedScore}/10 | Grounded: ${evalResult.isGrounded} | Helpful: ${evalResult.isHelpful}`);
+      console.log(`Score: ${score}/10 | Grounded: ${evalResult.isGrounded} | Helpful: ${evalResult.isHelpful}`);
       console.log(`Reasoning: ${evalResult.reasoning}\n`);
 
       if (tc.expectGrounded) {
         expect(evalResult.isGrounded).toBe(true);
       }
-      expect(normalizedScore).toBeGreaterThanOrEqual(tc.minScore);
+      expect(score).toBeGreaterThanOrEqual(tc.minScore);
     });
   }
 });
