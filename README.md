@@ -1,6 +1,6 @@
 # Agentic HCM Chatbot Evaluation Framework
 
-[![AI Agent Evaluation Suite](https://github.com/haywardsjohnny/agentic-qa-mini-project/actions/workflows/eval-ci.yml/badge.svg)](https://github.com/haywardsjohnny/agentic-qa-mini-project/actions/workflows/eval-ci.yml)
+[![AI Agent Evaluation Suite](https://github.com/SAIREDDY-PERSONAL/agentic-qa-mini-project/actions/workflows/eval-ci.yml/badge.svg)](https://github.com/SAIREDDY-PERSONAL/agentic-qa-mini-project/actions/workflows/eval-ci.yml)
 
 An evaluation framework for an agentic HR chatbot, written in TypeScript. Playwright drives the chat UI and checks which tools the agent called. An LLM judge then scores each reply for groundedness and helpfulness.
 
