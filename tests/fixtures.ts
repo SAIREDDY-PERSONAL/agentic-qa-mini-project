@@ -1,4 +1,11 @@
 import { test as base, expect, type Locator, type Page } from "@playwright/test";
+import {
+  findScenario,
+  formatVerdict,
+  judgeUiOutcome,
+  repoRoot,
+  visionJudgeAvailable,
+} from "../src/evaluators/ui_judge.js";
 
 export type ToolCall = { toolName: string; args: Record<string, unknown> };
 
@@ -66,13 +73,55 @@ export class MockAgent {
   }
 }
 
-export const test = base.extend<{ chatPage: ChatPage; mockAgent: MockAgent }>({
+export const test = base.extend<{ chatPage: ChatPage; mockAgent: MockAgent; uiJudge: void }>({
   chatPage: async ({ page }, use) => {
     await use(new ChatPage(page));
   },
   mockAgent: async ({ page }, use) => {
     await use(new MockAgent(page));
   },
+
+  // With UI_JUDGE=1, an independent LLM judge reviews the final page of every test generated
+  // from a plan (files with a `// spec:` comment) and attaches its verdict to the report.
+  // If the judge finds a contradiction in a test whose own assertions passed, the test fails.
+  // Opt a test out with: test.info().annotations.push({ type: "ui-judge", description: "skip: <reason>" })
+  uiJudge: [
+    async ({ page }, use, testInfo) => {
+      await use();
+      if (process.env.UI_JUDGE !== "1") return;
+
+      // A test can opt out with a reason, e.g. when its final step runs in another browser context
+      if (testInfo.annotations.some((a) => a.type === "ui-judge" && a.description?.startsWith("skip"))) return;
+      const scenario = await findScenario(testInfo.file, testInfo.title, repoRoot(testInfo.config.configFile));
+      if (!scenario) return;
+      if (!visionJudgeAvailable()) {
+        testInfo.annotations.push({ type: "ui-judge", description: "skipped: needs ANTHROPIC_API_KEY or OPENAI_API_KEY" });
+        return;
+      }
+
+      let verdict;
+      try {
+        verdict = await judgeUiOutcome({
+          scenario: scenario.text,
+          finalStep: scenario.finalStep,
+          url: page.url(),
+          ariaSnapshot: await page.locator("body").ariaSnapshot(),
+          screenshot: await page.screenshot({ fullPage: true }),
+        });
+      } catch (error) {
+        testInfo.annotations.push({ type: "ui-judge", description: `error: ${(error as Error).message}` });
+        return;
+      }
+
+      const report = formatVerdict(verdict);
+      await testInfo.attach("ui-judge-verdict", { body: report, contentType: "text/plain" });
+      testInfo.annotations.push({ type: "ui-judge", description: `${verdict.verdict}: ${verdict.summary}` });
+      if (verdict.verdict === "FAIL" && testInfo.status === "passed") {
+        throw new Error(`The test's assertions passed, but the independent UI judge disagrees.\n\n${report}`);
+      }
+    },
+    { auto: true },
+  ],
 });
 
 export { expect };

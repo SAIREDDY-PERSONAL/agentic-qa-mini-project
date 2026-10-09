@@ -15,7 +15,16 @@ export const ChatbotEvalSchema = z.object({
 
 export type ChatbotEval = z.infer<typeof ChatbotEvalSchema>;
 
-function createJudgeModel() {
+export type JudgeProvider = "anthropic" | "openai" | "ollama";
+
+// Picks the judge provider from the environment: Anthropic, then OpenAI, then local Ollama
+export function judgeProvider(): JudgeProvider {
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (process.env.OPENAI_API_KEY) return "openai";
+  return "ollama";
+}
+
+export function createChatModel() {
   if (process.env.ANTHROPIC_API_KEY) {
     const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID || "wrkspc_01FDNRYEt7gkcuCyNJY8T988";
     const anthropicModel = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
@@ -29,7 +38,7 @@ function createJudgeModel() {
           "anthropic-workspace-id": workspaceId,
         },
       },
-    }).withStructuredOutput(ChatbotEvalSchema);
+    });
   }
 
   if (process.env.OPENAI_API_KEY) {
@@ -38,7 +47,7 @@ function createJudgeModel() {
       modelName: "gpt-4o-mini",
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
-    }).withStructuredOutput(ChatbotEvalSchema);
+    });
   }
 
   console.log("Using LLM Judge Provider: Local Ollama (llama3.2)");
@@ -46,10 +55,10 @@ function createJudgeModel() {
     baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
     model: process.env.OLLAMA_MODEL || "llama3.2",
     temperature: 0,
-  }).withStructuredOutput(ChatbotEvalSchema);
+  });
 }
 
-const judgeModel = createJudgeModel();
+const judgeModel = createChatModel().withStructuredOutput(ChatbotEvalSchema);
 
 export async function judgeChatbotResponse(params: {
   userPrompt: string;

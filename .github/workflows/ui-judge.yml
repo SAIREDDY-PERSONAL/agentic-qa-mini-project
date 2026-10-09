@@ -1,0 +1,53 @@
+name: UI Judge (on demand)
+
+# Runs the full suite with the independent LLM judge reviewing every UI test's final screenshot.
+# Manual only: it makes one vision-model call per UI test. Optionally runs the seeded-bug demo.
+on:
+  workflow_dispatch:
+    inputs:
+      demo:
+        description: "Also run the judge demo (BUGS=upload, deliberately weak test)"
+        type: boolean
+        default: false
+
+jobs:
+  ui-judge:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies & Browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run suite with UI judge
+        run: npm run test:judge
+
+      - name: Upload judged report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-judge-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Run judge demo (expected to fail)
+        if: ${{ inputs.demo }}
+        run: npm run judge:demo || echo "Demo failed as expected - see the judge-demo report"
+
+      - name: Upload demo report
+        if: ${{ inputs.demo }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-demo-report
+          path: playwright-report/
+          retention-days: 14
