@@ -11,6 +11,9 @@ test.describe("Sign-in and sign-out", () => {
     browser,
     baseURL,
   }) => {
+    // The final step runs in a separate browser context the UI judge cannot screenshot
+    test.info().annotations.push({ type: "ui-judge", description: "skip: final step runs in a separate browser context" });
+
     await page.goto("/login.html");
     await expect(page.getByRole("heading", { name: "Sign in to Acme HR" })).toBeVisible();
 

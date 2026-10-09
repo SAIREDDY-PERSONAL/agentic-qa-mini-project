@@ -79,6 +79,23 @@ The portal's UI tests were planned and written by the Playwright Test Agents, th
 
 These are ordinary Playwright tests with role/label locators and web-first assertions, and no LLM runs at test time. The upload tests check the new document row as well as the success message, so they fail when the seeded `upload` bug is on.
 
+## Independent UI judge
+
+A generated test checks what its generator decided to assert. If that's too weak, for example only a success message, the test can pass while the feature is broken. The UI judge is a second, independent check. It doesn't see the test code. After each UI test, it gets:
+
+- the scenario from the test's plan (found through the file's `// spec:` comment and the test title)
+- the final page: a full-page screenshot, the accessibility snapshot and the URL
+
+It scores each expected result of the scenario's **last step** (the state the final page actually shows) as *met*, *contradicted* or *not verifiable*. The verdict is derived from those checks in code, not chosen by the model: any contradiction means **FAIL**, all met means **PASS**, otherwise **INCONCLUSIVE**. The verdict and per-check evidence are attached to the test in the HTML report. If the judge says FAIL but the test's own assertions passed, the test fails.
+
+```bash
+npm run test:judge   # full suite with the judge (needs ANTHROPIC_API_KEY or OPENAI_API_KEY)
+npm run judge:demo   # BUGS=upload on port 8093: a deliberately weak upload test passes its own
+                     # assertions, and the judge fails it ("success message shown, but the list is empty")
+```
+
+The judge is opt-in (`UI_JUDGE=1`) because it makes one vision-model call per UI test. Pull-request CI stays deterministic, and the **UI Judge (on demand)** workflow runs it in GitHub Actions. A test whose final state isn't on its main page can opt out with a reason (see `tests/e2e/login/redirect-next.spec.ts`).
+
 ## Running it
 
 Requires Node.js 20+.
@@ -127,6 +144,8 @@ src/evaluators/llm_judge.ts    LLM-as-judge evaluator
 tests/fixtures.ts              chatPage + mockAgent fixtures
 tests/e2e/chatbot.spec.ts      data-driven evaluation suite
 tests/e2e/<feature>/           agent-generated UI tests for the portal
+tests/judge-demo/              deliberately weak test, only run by npm run judge:demo
+src/evaluators/ui_judge.ts     independent UI judge (plan + final screenshot)
 tests/seed*.spec.ts            starting points for the Playwright Test Agents
 specs/                         test plans written by the planner agent
 .claude/agents/                Playwright planner / generator / healer agents
