@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "npx playwright test",
+    "test:smoke": "playwright test --grep @smoke",
     "typecheck": "tsc --noEmit",
     "test:judge": "UI_JUDGE=1 playwright test",
     "judge:demo": "PORT=8093 BUGS=upload JUDGE_DEMO=1 UI_JUDGE=1 playwright test tests/judge-demo tests/e2e/documents/upload-pdf.spec.ts"

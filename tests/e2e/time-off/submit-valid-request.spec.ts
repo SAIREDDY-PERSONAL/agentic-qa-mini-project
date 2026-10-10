@@ -3,7 +3,7 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("Time off requests", () => {
-  test("Submit a valid vacation request", async ({ page, timeOffPage }) => {
+  test("Submit a valid vacation request", { tag: "@smoke" }, async ({ page, timeOffPage }) => {
     await signIn(page);
 
     // 1. Navigate to /time-off.html.

@@ -3,7 +3,7 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("Documents page", () => {
-  test("Upload a PDF successfully", async ({ page, documentsPage }) => {
+  test("Upload a PDF successfully", { tag: "@smoke" }, async ({ page, documentsPage }) => {
     await signIn(page);
 
     // 1. Navigate to /documents.html. Verify heading 'Documents', and that 'No documents uploaded yet.' is visible and the table has no data rows.

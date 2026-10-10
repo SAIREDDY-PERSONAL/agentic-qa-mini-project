@@ -3,7 +3,7 @@
 import { test, expect } from "../../fixtures.js";
 
 test.describe("Sign-in and sign-out", () => {
-  test("Protected pages are inaccessible when signed out", async ({ page, loginPage, dashboardPage, documentsPage }) => {
+  test("Protected pages are inaccessible when signed out", { tag: "@smoke" }, async ({ page, loginPage, dashboardPage, documentsPage }) => {
     await loginPage.goto();
     await expect(loginPage.heading).toHaveText("Sign in to Acme HR");
 

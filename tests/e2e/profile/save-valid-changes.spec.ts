@@ -3,7 +3,7 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("My Profile", () => {
-  test("Save valid changes and confirm they persist after reload", async ({ page, profilePage }) => {
+  test("Save valid changes and confirm they persist after reload", { tag: "@smoke" }, async ({ page, profilePage }) => {
     await signIn(page);
     const { phone, homeAddress } = profilePage;
 

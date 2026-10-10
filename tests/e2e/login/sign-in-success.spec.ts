@@ -5,7 +5,7 @@ import { test, expect, demoCredentials } from "../../fixtures.js";
 const { username, password } = demoCredentials;
 
 test.describe("Sign-in and sign-out", () => {
-  test("Successful sign in lands on the dashboard", async ({ page, loginPage, dashboardPage }) => {
+  test("Successful sign in lands on the dashboard", { tag: "@smoke" }, async ({ page, loginPage, dashboardPage }) => {
     await loginPage.goto();
     await expect(loginPage.heading).toHaveText("Sign in to Acme HR");
 

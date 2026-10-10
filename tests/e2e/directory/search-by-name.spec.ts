@@ -3,7 +3,7 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("Employee Directory", () => {
-  test("Search by name shows a single matching row", async ({ page, directoryPage }) => {
+  test("Search by name shows a single matching row", { tag: "@smoke" }, async ({ page, directoryPage }) => {
     await signIn(page);
     const { resultCount, employeeRows } = directoryPage;
 

@@ -4,7 +4,7 @@ import { test, expect, signIn } from "../../fixtures.js";
 import type { NavLinkName } from "../../pages/index.js";
 
 test.describe("Header Navigation", () => {
-  test("Header links navigate to each page and mark the current link", async ({ page, dashboardPage }) => {
+  test("Header links navigate to each page and mark the current link", { tag: "@smoke" }, async ({ page, dashboardPage }) => {
     await signIn(page);
     // The header is the same on every page, so the dashboard page object covers all of them
     const header = dashboardPage;

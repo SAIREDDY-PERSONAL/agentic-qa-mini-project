@@ -105,6 +105,7 @@ npm ci
 npx playwright install chromium
 cp .env.example .env   # then add your API key (see below)
 npm test               # runs the suite; the HTML report is written to playwright-report/
+npm run test:smoke     # only the @smoke UI tests (one happy path per feature, no API key needed)
 npm run typecheck      # strict TypeScript check
 ```
 
