@@ -22,7 +22,7 @@ eval_dataset.json ──► chatbot.spec.ts (one test per case)
 ```
 
 - **Demo HR portal** (`app/`): a small HR site served by `app/server.mjs`, with no dependencies. See [Demo HR portal](#demo-hr-portal) below. The chatbot suite uses its HR Assistant page (`/chat.html`) and mocks `/api/agent/run`, so the judge sees fixed replies.
-- **Fixtures** (`tests/fixtures.ts`): `chatPage` is a page object for the chat UI. `mockAgent` mocks the agent API and records the tool calls it returned.
+- **Fixtures** (`tests/fixtures.ts`): `chatPage` is a page object for the chat UI. `mockAgent` mocks the agent API and records the tool calls it returned. The portal's page objects (`loginPage`, `dashboardPage`, `timeOffPage`, `documentsPage`, `directoryPage`, `profilePage`) live in `tests/pages/` and are injected as fixtures into the UI tests.
 - **LLM judge** (`src/evaluators/llm_judge.ts`): built with LangChain. It returns a verdict validated against a Zod schema: `score`, `isGrounded`, `isHelpful` and `reasoning`. The provider is picked from your environment: Anthropic Claude if `ANTHROPIC_API_KEY` is set, otherwise OpenAI if `OPENAI_API_KEY` is set, otherwise a local Ollama model.
 - **Dataset** (`src/data/eval_dataset.json`): each case defines the prompt, context, mocked tool calls and their results, the expected tool, a minimum score, and whether the reply must be grounded.
 
@@ -141,7 +141,8 @@ app/server.mjs                 demo HR portal server (static pages + fake APIs)
 app/public/                    portal pages, scripts, styles and directory data
 src/data/eval_dataset.json     evaluation cases
 src/evaluators/llm_judge.ts    LLM-as-judge evaluator
-tests/fixtures.ts              chatPage + mockAgent fixtures
+tests/fixtures.ts              chatPage + mockAgent + page-object fixtures
+tests/pages/                   page objects for the portal (one per page, shared header in BasePage)
 tests/e2e/chatbot.spec.ts      data-driven evaluation suite
 tests/e2e/<feature>/           agent-generated UI tests for the portal
 tests/judge-demo/              deliberately weak test, only run by npm run judge:demo

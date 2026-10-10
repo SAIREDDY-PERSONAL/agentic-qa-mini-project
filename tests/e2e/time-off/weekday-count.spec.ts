@@ -3,21 +3,15 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("Time off requests", () => {
-  test("Weekend days are excluded from the day count", async ({ page }) => {
+  test("Weekend days are excluded from the day count", async ({ page, timeOffPage }) => {
     await signIn(page);
 
     // 1. Navigate to /time-off.html. Select Leave type 'Sick', Start date '2027-03-05' (Friday), End date '2027-03-09' (Tuesday), click 'Submit request'. Range spans Fri, Sat, Sun, Mon, Tue = 3 weekdays.
-    await page.goto("/time-off.html");
-    await page.getByLabel("Leave type").selectOption("Sick");
-    await page.getByLabel("Start date").fill("2027-03-05");
-    await page.getByLabel("End date").fill("2027-03-09");
-    await page.getByRole("button", { name: "Submit request" }).click();
-    await expect(
-      page.getByText("Time-off request submitted for 3 days. Status: Pending approval."),
-    ).toBeVisible();
-    await expect(page.getByText("Available balance:")).toContainText("12 days");
-    const dataRows = page.getByRole("table").getByRole("row").filter({ hasNot: page.getByRole("columnheader") });
-    await expect(dataRows).toHaveCount(1);
-    await expect(dataRows.getByRole("cell")).toHaveText(["Sick", "2027-03-05", "2027-03-09", "3", "Pending"]);
+    await timeOffPage.goto();
+    await timeOffPage.submitRequest({ leaveType: "Sick", startDate: "2027-03-05", endDate: "2027-03-09" });
+    await expect(timeOffPage.message).toHaveText("Time-off request submitted for 3 days. Status: Pending approval.");
+    await expect(timeOffPage.balance).toContainText("12 days");
+    await expect(timeOffPage.requestRows).toHaveCount(1);
+    await expect(timeOffPage.requestRows.getByRole("cell")).toHaveText(["Sick", "2027-03-05", "2027-03-09", "3", "Pending"]);
   });
 });

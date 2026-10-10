@@ -3,30 +3,27 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("Time off requests", () => {
-  test("Submit a valid vacation request", async ({ page }) => {
+  test("Submit a valid vacation request", async ({ page, timeOffPage }) => {
     await signIn(page);
 
     // 1. Navigate to /time-off.html.
-    await page.goto("/time-off.html");
-    await expect(page.getByRole("heading", { name: "Time off", exact: true })).toBeVisible();
-    await expect(page.getByText("Available balance:")).toContainText("15 days");
-    await expect(page.getByText("You have no time-off requests.")).toBeVisible();
+    await timeOffPage.goto();
+    await expect(timeOffPage.heading).toHaveText("Time off");
+    await expect(timeOffPage.balance).toContainText("15 days");
+    await expect(timeOffPage.noRequests).toBeVisible();
 
     // 2. Select Leave type 'Vacation', fill Start date '2027-03-02' (Tuesday), End date '2027-03-04' (Thursday), Reason 'Family trip', then click 'Submit request'.
-    await page.getByLabel("Leave type").selectOption("Vacation");
-    await page.getByLabel("Start date").fill("2027-03-02");
-    await page.getByLabel("End date").fill("2027-03-04");
-    await page.getByLabel("Reason (optional)").fill("Family trip");
-    await page.getByRole("button", { name: "Submit request" }).click();
-    await expect(
-      page.getByText("Time-off request submitted for 3 days. Status: Pending approval."),
-    ).toBeVisible();
-    await expect(page.getByText("Available balance:")).toContainText("12 days");
-    await expect(page.getByText("You have no time-off requests.")).not.toBeVisible();
-    await expect(page.getByRole("table")).toBeVisible();
-    const dataRows = page.getByRole("table").getByRole("row").filter({ hasNot: page.getByRole("columnheader") });
-    await expect(dataRows).toHaveCount(1);
-    const cells = dataRows.getByRole("cell");
-    await expect(cells).toHaveText(["Vacation", "2027-03-02", "2027-03-04", "3", "Pending"]);
+    await timeOffPage.submitRequest({
+      leaveType: "Vacation",
+      startDate: "2027-03-02",
+      endDate: "2027-03-04",
+      reason: "Family trip",
+    });
+    await expect(timeOffPage.message).toHaveText("Time-off request submitted for 3 days. Status: Pending approval.");
+    await expect(timeOffPage.balance).toContainText("12 days");
+    await expect(timeOffPage.noRequests).not.toBeVisible();
+    await expect(timeOffPage.requestsTable).toBeVisible();
+    await expect(timeOffPage.requestRows).toHaveCount(1);
+    await expect(timeOffPage.requestRows.getByRole("cell")).toHaveText(["Vacation", "2027-03-02", "2027-03-04", "3", "Pending"]);
   });
 });

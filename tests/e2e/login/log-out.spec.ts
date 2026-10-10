@@ -2,37 +2,33 @@
 // seed: tests/seed-logged-out.spec.ts
 import { test, expect } from "../../fixtures.js";
 
-const username = process.env.DEMO_USERNAME ?? "demo";
-const password = process.env.DEMO_PASSWORD ?? "demo123";
-
 test.describe("Sign-in and sign-out", () => {
-  test("Log out returns to login with a confirmation and ends the session", async ({ page }) => {
-    await page.goto("/login.html");
-    await expect(page.getByRole("heading", { name: "Sign in to Acme HR" })).toBeVisible();
+  test("Log out returns to login with a confirmation and ends the session", async ({ page, loginPage, dashboardPage }) => {
+    const welcome = page.getByRole("heading", { name: "Welcome, Alex Morgan" });
+    await loginPage.goto();
+    await expect(loginPage.heading).toHaveText("Sign in to Acme HR");
 
     // 1. Sign in with the demo credentials (DEMO_USERNAME / DEMO_PASSWORD) and confirm /dashboard.html loads.
-    await page.getByLabel("Username").fill(username);
-    await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await loginPage.signIn();
     await expect(page).toHaveURL(/\/dashboard\.html$/);
-    await expect(page.getByRole("heading", { name: "Welcome, Alex Morgan" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
+    await expect(dashboardPage.heading).toHaveText("Welcome, Alex Morgan");
+    await expect(dashboardPage.logOutButton).toBeVisible();
 
     // 2. Click the "Log out" button in the header.
-    await page.getByRole("button", { name: "Log out" }).click();
+    await dashboardPage.logOut();
     await expect(page).toHaveURL(/\/login\.html\?loggedOut=1$/);
-    await expect(page.getByText("You have been logged out.")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sign in to Acme HR" })).toBeVisible();
+    await expect(loginPage.loggedOutMessage).toBeVisible();
+    await expect(loginPage.heading).toHaveText("Sign in to Acme HR");
 
     // 3. Navigate directly to /dashboard.html.
-    await page.goto("/dashboard.html");
+    await dashboardPage.goto();
     await expect(page).toHaveURL(/\/login\.html\?next=%2Fdashboard\.html$/);
-    await expect(page.getByRole("heading", { name: "Welcome, Alex Morgan" })).toHaveCount(0);
+    await expect(welcome).toHaveCount(0);
 
     // 4. Navigate back (browser Back) to a protected page if reachable.
     await page.goBack();
-    await expect(page.getByRole("heading", { name: "Sign in to Acme HR" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Welcome, Alex Morgan" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Log out" })).toHaveCount(0);
+    await expect(loginPage.heading).toHaveText("Sign in to Acme HR");
+    await expect(welcome).toHaveCount(0);
+    await expect(loginPage.logOutButton).toHaveCount(0);
   });
 });

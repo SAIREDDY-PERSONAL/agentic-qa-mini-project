@@ -3,39 +3,27 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("Time off requests", () => {
-  test("Dashboard reflects a submitted request", async ({ page }) => {
+  test("Dashboard reflects a submitted request", async ({ page, timeOffPage, dashboardPage }) => {
     await signIn(page);
 
     // 1. Navigate to /time-off.html, submit Vacation from '2027-03-02' to '2027-03-04' and wait for 'Time-off request submitted for 3 days. Status: Pending approval.'.
-    await page.goto("/time-off.html");
-    await page.getByLabel("Leave type").selectOption("Vacation");
-    await page.getByLabel("Start date").fill("2027-03-02");
-    await page.getByLabel("End date").fill("2027-03-04");
-    await page.getByRole("button", { name: "Submit request" }).click();
-    await expect(
-      page.getByText("Time-off request submitted for 3 days. Status: Pending approval."),
-    ).toBeVisible();
-    await expect(page.getByText("Available balance:")).toContainText("12 days");
+    await timeOffPage.goto();
+    await timeOffPage.submitRequest({ leaveType: "Vacation", startDate: "2027-03-02", endDate: "2027-03-04" });
+    await expect(timeOffPage.message).toHaveText("Time-off request submitted for 3 days. Status: Pending approval.");
+    await expect(timeOffPage.balance).toContainText("12 days");
 
     // 2. Click the 'Dashboard' link in the main navigation.
-    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Dashboard" }).click();
-    await expect(page.getByRole("heading", { name: "Welcome, Alex Morgan" })).toBeVisible();
-    const ptoRegion = page
-      .getByRole("region")
-      .filter({ has: page.getByRole("heading", { name: "PTO available" }) });
-    await expect(ptoRegion).toContainText("12 days");
-    await expect(ptoRegion).toContainText("3 days requested of 15");
-    const pendingRegion = page
-      .getByRole("region")
-      .filter({ has: page.getByRole("heading", { name: "Pending requests" }) });
-    await expect(pendingRegion.getByText("1", { exact: true })).toBeVisible();
+    await timeOffPage.navigateTo("Dashboard");
+    await expect(dashboardPage.heading).toHaveText("Welcome, Alex Morgan");
+    await expect(dashboardPage.ptoCard).toContainText("12 days");
+    await expect(dashboardPage.ptoCard).toContainText("3 days requested of 15");
+    await expect(dashboardPage.pendingCard.getByText("1", { exact: true })).toBeVisible();
 
     // 3. Click the 'View requests' link.
-    await page.getByRole("link", { name: "View requests" }).click();
+    await dashboardPage.viewRequestsLink.click();
     await expect(page).toHaveURL(/\/time-off\.html$/);
-    await expect(page.getByText("Available balance:")).toContainText("12 days");
-    const dataRows = page.getByRole("table").getByRole("row").filter({ hasNot: page.getByRole("columnheader") });
-    await expect(dataRows).toHaveCount(1);
-    await expect(dataRows.getByRole("cell")).toHaveText(["Vacation", "2027-03-02", "2027-03-04", "3", "Pending"]);
+    await expect(timeOffPage.balance).toContainText("12 days");
+    await expect(timeOffPage.requestRows).toHaveCount(1);
+    await expect(timeOffPage.requestRows.getByRole("cell")).toHaveText(["Vacation", "2027-03-02", "2027-03-04", "3", "Pending"]);
   });
 });

@@ -6,6 +6,15 @@ import {
   repoRoot,
   visionJudgeAvailable,
 } from "../src/evaluators/ui_judge.js";
+import {
+  DashboardPage,
+  demoCredentials,
+  DirectoryPage,
+  DocumentsPage,
+  LoginPage,
+  ProfilePage,
+  TimeOffPage,
+} from "./pages/index.js";
 
 export type ToolCall = { toolName: string; args: Record<string, unknown> };
 
@@ -13,10 +22,7 @@ export type ToolCall = { toolName: string; args: Record<string, unknown> };
 // so tests start on protected pages without going through the login form.
 export async function signIn(page: Page) {
   const response = await page.request.post("/api/login", {
-    data: {
-      username: process.env.DEMO_USERNAME ?? "demo",
-      password: process.env.DEMO_PASSWORD ?? "demo123",
-    },
+    data: demoCredentials,
   });
   expect(response.ok(), "demo login should succeed").toBeTruthy();
   const { user } = await response.json();
@@ -73,7 +79,24 @@ export class MockAgent {
   }
 }
 
-export const test = base.extend<{ chatPage: ChatPage; mockAgent: MockAgent; uiJudge: void }>({
+type PageObjects = {
+  loginPage: LoginPage;
+  dashboardPage: DashboardPage;
+  timeOffPage: TimeOffPage;
+  documentsPage: DocumentsPage;
+  directoryPage: DirectoryPage;
+  profilePage: ProfilePage;
+};
+
+export const test = base.extend<PageObjects & { chatPage: ChatPage; mockAgent: MockAgent; uiJudge: void }>({
+  // Page objects for the e2e tests (see tests/pages). They only wrap the page: sign in first with signIn(page).
+  loginPage: async ({ page }, use) => use(new LoginPage(page)),
+  dashboardPage: async ({ page }, use) => use(new DashboardPage(page)),
+  timeOffPage: async ({ page }, use) => use(new TimeOffPage(page)),
+  documentsPage: async ({ page }, use) => use(new DocumentsPage(page)),
+  directoryPage: async ({ page }, use) => use(new DirectoryPage(page)),
+  profilePage: async ({ page }, use) => use(new ProfilePage(page)),
+
   chatPage: async ({ page }, use) => {
     await use(new ChatPage(page));
   },
@@ -125,3 +148,4 @@ export const test = base.extend<{ chatPage: ChatPage; mockAgent: MockAgent; uiJu
 });
 
 export { expect };
+export { demoCredentials };

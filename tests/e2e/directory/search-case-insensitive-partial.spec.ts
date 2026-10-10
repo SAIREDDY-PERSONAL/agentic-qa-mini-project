@@ -3,19 +3,16 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("Employee Directory", () => {
-  test("Search is case-insensitive and matches partial text", async ({ page }) => {
+  test("Search is case-insensitive and matches partial text", async ({ page, directoryPage }) => {
     await signIn(page);
-    const search = page.getByRole("searchbox", { name: "Search by name or department" });
-    const status = page.getByTestId("result-count");
-    const table = page.getByTestId("directory-table");
-    const dataRows = table.getByRole("row").filter({ hasNot: page.getByRole("columnheader") });
+    const { resultCount, employeeRows } = directoryPage;
 
     // 1. Navigate to /directory.html and type "AISHA" (upper case).
-    await page.goto("/directory.html");
-    await search.fill("AISHA");
-    await expect(status).toHaveText("Showing 1 of 10 employees");
-    await expect(dataRows).toHaveCount(1);
-    await expect(dataRows.first().getByRole("cell")).toHaveText([
+    await directoryPage.goto();
+    await directoryPage.searchFor("AISHA");
+    await expect(resultCount).toHaveText("Showing 1 of 10 employees");
+    await expect(employeeRows).toHaveCount(1);
+    await expect(employeeRows.first().getByRole("cell")).toHaveText([
       "Aisha Bello",
       "QA Engineer",
       "Engineering",
@@ -24,16 +21,16 @@ test.describe("Employee Directory", () => {
     ]);
 
     // 2. Replace the text with "fin" (partial, lower case department prefix).
-    await search.fill("fin");
-    await expect(status).toHaveText("Showing 2 of 10 employees");
-    await expect(dataRows).toHaveText([/^Maria Lopez/, /^Tom Nguyen/]);
-    await expect(table.getByRole("cell", { name: "Finance", exact: true })).toHaveCount(2);
+    await directoryPage.searchFor("fin");
+    await expect(resultCount).toHaveText("Showing 2 of 10 employees");
+    await expect(employeeRows).toHaveText([/^Maria Lopez/, /^Tom Nguyen/]);
+    await expect(directoryPage.cell("Finance")).toHaveCount(2);
 
     // 3. Replace the text with "sALES" (mixed case).
-    await search.fill("sALES");
-    await expect(status).toHaveText("Showing 1 of 10 employees");
-    await expect(dataRows).toHaveCount(1);
-    await expect(dataRows.first().getByRole("cell")).toHaveText([
+    await directoryPage.searchFor("sALES");
+    await expect(resultCount).toHaveText("Showing 1 of 10 employees");
+    await expect(employeeRows).toHaveCount(1);
+    await expect(employeeRows.first().getByRole("cell")).toHaveText([
       "Emma Wilson",
       "Sales Manager",
       "Sales",
