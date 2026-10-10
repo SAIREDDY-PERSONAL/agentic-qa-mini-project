@@ -1,0 +1,69 @@
+name: Smoke Tests
+
+# Runs the UI tests that carry the given tags, @smoke by default: one happy-path test per feature.
+# Deterministic and needs no API keys (the chatbot LLM judge and UI judge are not part of it).
+# Tag a test with { tag: "@smoke" } (or any other tag) to include it; run locally with: npm run test:smoke
+# Run it by hand from the Actions tab to pick other tags and/or specific test files.
+on:
+  # Scheduled runs are disabled for this project. To enable them, uncomment the two lines below
+  # and adjust the cron (UTC; "0 6 * * 1-5" is 06:00 UTC, Monday to Friday). Scheduled runs use @smoke.
+  # schedule:
+  #   - cron: "0 6 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Tags to run, comma or space separated (a test runs if it has any of them), e.g. @smoke, @login"
+        type: string
+        default: "@smoke"
+      tests:
+        description: "Optional test files or folders, space separated, e.g. tests/e2e/login tests/e2e/time-off/weekend-only.spec.ts"
+        type: string
+        default: ""
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies & Browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run tagged tests
+        env:
+          # Scheduled runs have no inputs, so they fall back to @smoke
+          TAGS: ${{ inputs.tags || '@smoke' }}
+          TESTS: ${{ inputs.tests }}
+        run: |
+          # "@smoke, login" -> "(@smoke|@login)(\s|$)", so @smoke does not also match e.g. @smoke-extra
+          tags=$(echo "$TAGS" | tr ', ' '\n\n' | sed '/^$/d; s/^@*/@/')
+          if [ -z "$tags" ] || echo "$tags" | grep -qvE '^@[A-Za-z0-9_-]+$'; then
+            echo "::error::Invalid tags '$TAGS': use letters, digits, '-' or '_', e.g. @smoke, @login"
+            exit 1
+          fi
+          grep="($(echo "$tags" | paste -sd'|' -))(\\s|\$)"
+          echo "Running tests matching $grep ${TESTS:+in $TESTS}"
+          # TESTS is left unquoted so several paths become separate arguments
+          npx playwright test --grep "$grep" $TESTS
+
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: playwright-report/
+          retention-days: 7

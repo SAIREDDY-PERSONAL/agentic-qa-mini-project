@@ -3,16 +3,14 @@
 import { test, expect, signIn } from "../../fixtures.js";
 
 test.describe("My Profile", () => {
-  test("Read-only fields show the user's data and cannot be edited", async ({ page }) => {
+  test("Read-only fields show the user's data and cannot be edited", async ({ page, profilePage }) => {
     await signIn(page);
-    const fullName = page.getByLabel("Full name");
-    const employeeId = page.getByLabel("Employee ID");
-    const workEmail = page.getByLabel("Work email");
+    const { fullName, employeeId, workEmail } = profilePage;
 
     // 1. Navigate to /profile.html
-    await page.goto("/profile.html");
+    await profilePage.goto();
     await expect(page).toHaveTitle("My Profile - Acme HR Portal");
-    await expect(page.getByRole("heading", { name: "My profile", level: 1 })).toBeVisible();
+    await expect(profilePage.heading).toHaveText("My profile");
 
     // 2. Read the Full name, Employee ID and Work email textboxes
     await expect(fullName).toHaveValue("Alex Morgan");
@@ -33,8 +31,8 @@ test.describe("My Profile", () => {
     await expect(workEmail).toHaveValue("alex.morgan@acme-hr.example");
 
     // 4. Check the editable fields
-    await expect(page.getByLabel("Phone")).toBeEditable();
-    await expect(page.getByLabel("Home address")).toBeEditable();
-    await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
+    await expect(profilePage.phone).toBeEditable();
+    await expect(profilePage.homeAddress).toBeEditable();
+    await expect(profilePage.saveButton).toBeVisible();
   });
 });
