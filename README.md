@@ -24,7 +24,7 @@ eval_dataset.json ──► chatbot.spec.ts (one test per case)
 - **Demo HR portal** (`app/`): a small HR site served by `app/server.mjs`, with no dependencies. See [Demo HR portal](#demo-hr-portal) below. The chatbot suite uses its HR Assistant page (`/chat.html`) and mocks `/api/agent/run`, so the judge sees fixed replies.
 - **Fixtures** (`tests/fixtures.ts`): `chatPage` is a page object for the chat UI. `mockAgent` mocks the agent API and records the tool calls it returned. The portal's page objects (`loginPage`, `dashboardPage`, `timeOffPage`, `documentsPage`, `directoryPage`, `profilePage`) live in `tests/pages/` and are injected as fixtures into the UI tests.
 - **LLM judge** (`src/evaluators/llm_judge.ts`): built with LangChain. It returns a verdict validated against a Zod schema: `score`, `isGrounded`, `isHelpful` and `reasoning`. The provider is picked from your environment: Anthropic Claude if `ANTHROPIC_API_KEY` is set, otherwise OpenAI if `OPENAI_API_KEY` is set, otherwise a local Ollama model.
-- **Dataset** (`src/data/eval_dataset.json`): each case defines the prompt, context, mocked tool calls and their results, the expected tool, a minimum score, and whether the reply must be grounded.
+- **Dataset** (`src/data/eval_dataset.json`): each case defines the prompt, context, mocked tool calls and their results, the expected tool, a minimum score, whether the reply must be grounded, and optional extra `tags`. `src/data/eval_dataset.ts` validates it with a Zod schema before any judge call: misspelt or missing fields, duplicate IDs, and an `expectedTool` that the case's mocked tool calls never call all fail the suite with a clear message.
 
 ## Test cases
 
@@ -35,7 +35,15 @@ eval_dataset.json ──► chatbot.spec.ts (one test per case)
 | TC_003 | Out of scope | "How do I make a chocolate cake?" | none (should decline) | 5 |
 | TC_004 | HR point of contact | "Who is my HR point of contact?" | `get_hr_contact` | 7 |
 
-To add a case, add an entry to `eval_dataset.json`. The suite generates one test per entry.
+To add a case, add an entry to `eval_dataset.json`. The suite generates one test per entry, titled `[<id>] <category>`; the prompt is shown as an annotation in the report, so editing a prompt keeps the test's history.
+
+Every case is tagged `@chat-agent`. To give a case its own tags, add e.g. `"tags": ["@happy-path"]`. `@smoke` is rejected, because the smoke run has no API key. Select cases like this:
+
+```bash
+npm run test:chatbot                                   # all cases
+npx playwright test --grep "\[TC_003\]"                # one case by id
+npx playwright test --grep @happy-path                 # cases with an extra tag
+```
 
 ## Demo HR portal
 
@@ -60,10 +68,10 @@ User data (requests, documents, profile edits) lives in `sessionStorage`, so eve
 New UI tests are created with Playwright's official [Test Agents](https://playwright.dev/docs/test-agents), which run as Claude Code subagents (`.claude/agents/`) through the `playwright-test` MCP server (`.mcp.json`):
 
 - **Planner** explores the running portal and writes a Markdown test plan to `specs/`.
-- **Generator** replays each plan step in a real browser and writes the test to `tests/e2e/`.
+- **Generator** replays each plan step in a real browser and writes the test to `tests/<feature>/`.
 - **Healer** runs failing tests, debugs them and fixes them.
 
-The agents start from a seed test: `tests/seed.spec.ts` signs in through the API, and `tests/seed-logged-out.spec.ts` starts on the login page. The seed also shows the conventions generated tests should follow. Plans and generated tests are reviewed in a PR like any other code. See [`specs/README.md`](specs/README.md) for the workflow.
+The agents start from a seed test: `tests/seeds/seed.spec.ts` signs in through the API, and `tests/seeds/seed-logged-out.spec.ts` starts on the login page. The seed also shows the conventions generated tests should follow. Plans and generated tests are reviewed in a PR like any other code. See [`specs/README.md`](specs/README.md) for the workflow.
 
 ## UI test suite (agent-generated)
 
@@ -71,11 +79,11 @@ The portal's UI tests were planned and written by the Playwright Test Agents, th
 
 | Feature | Plan | Tests |
 |---|---|---|
-| Sign in / sign out | `specs/login.md` | `tests/e2e/login/` (6) |
-| Time off | `specs/time-off.md` | `tests/e2e/time-off/` (7) |
-| Documents | `specs/documents.md` | `tests/e2e/documents/` (7) |
-| Employee directory | `specs/directory.md` | `tests/e2e/directory/` (5) |
-| Profile + navigation | `specs/profile-and-navigation.md` | `tests/e2e/profile/` (5), `tests/e2e/navigation/` (1) |
+| Sign in / sign out | `specs/login.md` | `tests/login/` (6) |
+| Time off | `specs/time-off.md` | `tests/time-off/` (7) |
+| Documents | `specs/documents.md` | `tests/documents/` (7) |
+| Employee directory | `specs/directory.md` | `tests/directory/` (5) |
+| Profile + navigation | `specs/profile-and-navigation.md` | `tests/profile/` (5), `tests/navigation/` (1) |
 
 These are ordinary Playwright tests with role/label locators and web-first assertions, and no LLM runs at test time. The upload tests check the new document row as well as the success message, so they fail when the seeded `upload` bug is on.
 
@@ -94,7 +102,7 @@ npm run judge:demo   # BUGS=upload on port 8093: a deliberately weak upload test
                      # assertions, and the judge fails it ("success message shown, but the list is empty")
 ```
 
-The judge is opt-in (`UI_JUDGE=1`) because it makes one vision-model call per UI test. Pull-request CI stays deterministic, and the **UI Judge (on demand)** workflow runs it in GitHub Actions. A test whose final state isn't on its main page can opt out with a reason (see `tests/e2e/login/redirect-next.spec.ts`).
+The judge is opt-in (`UI_JUDGE=1`) because it makes one vision-model call per UI test. Pull-request CI stays deterministic, and the **UI Judge (on demand)** workflow runs it in GitHub Actions. A test whose final state isn't on its main page can opt out with a reason (see `tests/login/redirect-next.spec.ts`).
 
 ## Running it
 
@@ -102,11 +110,22 @@ Requires Node.js 20+.
 
 ```bash
 npm ci
-npx playwright install chromium
+npx playwright install   # Chromium, Firefox and WebKit
 cp .env.example .env   # then add your API key (see below)
 npm test               # runs the suite; the HTML report is written to playwright-report/
 npm run test:smoke     # only the @smoke UI tests (one happy path per feature, no API key needed)
+npm run test:chatbot   # only the @chat-agent LLM-as-judge suite (needs an API key)
 npm run typecheck      # strict TypeScript check
+```
+
+### Browsers
+
+`playwright.config.ts` defines one project per browser: `chromium`, `firefox`, `webkit` (Safari's engine), `mobile-chrome` (Pixel 9) and `mobile-safari` (iPhone 16). `npm test` runs the UI tests on all of them; the chatbot suite runs on Chromium only, because each case is a paid judge call and the result doesn't depend on the browser. CI and the UI judge scripts run Chromium only.
+
+```bash
+npx playwright test --project=firefox                   # one browser
+npx playwright test --project=webkit --project=mobile-safari
+BRANDED_BROWSERS=1 npx playwright test --project=google-chrome   # installed Chrome (also: microsoft-edge)
 ```
 
 ### Configuration
@@ -138,21 +157,22 @@ GitHub Actions (`.github/workflows/eval-ci.yml`) runs on every push and pull req
 ## Project structure
 
 ```
-app/server.mjs                 demo HR portal server (static pages + fake APIs)
-app/public/                    portal pages, scripts, styles and directory data
-src/data/eval_dataset.json     evaluation cases
-src/evaluators/llm_judge.ts    LLM-as-judge evaluator
-tests/fixtures.ts              chatPage + mockAgent + page-object fixtures
-tests/pages/                   page objects for the portal (one per page, shared header in BasePage)
-tests/e2e/chatbot.spec.ts      data-driven evaluation suite
-tests/e2e/<feature>/           agent-generated UI tests for the portal
-tests/judge-demo/              deliberately weak test, only run by npm run judge:demo
-src/evaluators/ui_judge.ts     independent UI judge (plan + final screenshot)
-tests/seed*.spec.ts            starting points for the Playwright Test Agents
-specs/                         test plans written by the planner agent
-.claude/agents/                Playwright planner / generator / healer agents
-playwright.config.ts           Playwright config + local web server
-.github/workflows/eval-ci.yml  CI pipeline
+app/server.mjs                    demo HR portal server (static pages + fake APIs)
+app/public/                       portal pages, scripts, styles and directory data
+src/data/eval_dataset.json        evaluation cases
+src/data/eval_dataset.ts          Zod schema that validates the cases
+src/evaluators/llm_judge.ts       LLM-as-judge evaluator
+tests/fixtures.ts                 chatPage + mockAgent + page-object fixtures
+tests/pages/                      page objects for the portal (one per page, shared header in BasePage)
+tests/chat-agent/chatbot.spec.ts  chatbot LLM-as-judge evaluation suite (data-driven)
+tests/<feature>/                  agent-generated UI tests for the portal, one folder per feature
+tests/judge-demo/                 deliberately weak test, only run by npm run judge:demo
+src/evaluators/ui_judge.ts        independent UI judge (plan + final screenshot)
+tests/seeds/                      starting points for the Playwright Test Agents
+specs/                            test plans written by the planner agent
+.claude/agents/                   Playwright planner / generator / healer agents
+playwright.config.ts              Playwright config + local web server
+.github/workflows/eval-ci.yml     CI pipeline
 ```
 
 ## Limitations

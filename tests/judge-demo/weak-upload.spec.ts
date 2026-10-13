@@ -4,7 +4,7 @@
 // @judge-demo tag). It checks only the success message, like a hastily written test, so with
 // BUGS=upload it still passes even though the document is never saved. The independent UI judge
 // compares the final page with the plan's expected results and should fail it.
-// The properly written version is tests/e2e/documents/upload-pdf.spec.ts.
+// The properly written version is tests/documents/upload-pdf.spec.ts.
 import { test, expect, signIn } from "../fixtures.js";
 
 test.describe("Documents page", () => {

@@ -1,0 +1,82 @@
+name: Chatbot Evaluation
+
+# Runs the chatbot LLM-as-judge suite (tests/chat-agent, tagged @chat-agent) on its own.
+# Every test case makes one paid judge call, so it runs only when chatbot code or data changes,
+# or by hand from the Actions tab (optionally with another judge model).
+# Needs ANTHROPIC_API_KEY or OPENAI_API_KEY as a repository secret.
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tests/chat-agent/**'
+      - 'tests/fixtures.ts'
+      - 'src/evaluators/llm_judge.ts'
+      - 'src/data/eval_dataset.json'
+      - 'src/data/eval_dataset.ts'
+      - 'app/public/chat.html'
+      - 'package-lock.json'
+      - '.github/workflows/chatbot-eval.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tests/chat-agent/**'
+      - 'tests/fixtures.ts'
+      - 'src/evaluators/llm_judge.ts'
+      - 'src/data/eval_dataset.json'
+      - 'src/data/eval_dataset.ts'
+      - 'app/public/chat.html'
+      - 'package-lock.json'
+      - '.github/workflows/chatbot-eval.yml'
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Anthropic judge model (empty = the default, claude-haiku-5-5)"
+        type: string
+        default: ""
+
+concurrency:
+  group: chatbot-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chatbot-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_MODEL: ${{ inputs.model }}
+    steps:
+      # Without a key the judge falls back to a local Ollama model, which the runner does not have
+      - name: Check judge API key
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::Set the ANTHROPIC_API_KEY or OPENAI_API_KEY repository secret to run the chatbot judge"
+            exit 1
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies & Browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run chatbot evaluation
+        run: npm run test:chatbot
+
+      - name: Upload Chatbot Evaluation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chatbot-eval-report
+          path: playwright-report/
+          retention-days: 14

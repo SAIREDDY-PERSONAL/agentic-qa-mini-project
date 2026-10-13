@@ -2,7 +2,7 @@
 
 ## Application Overview
 
-Test plan for the Employee directory page (/directory.html) of the Acme HR Portal (http://localhost:8080). The page has a searchbox labelled "Search by name or department" that filters a 10-row table (columns: Name, Title, Department, Email, Location) as the user types, case-insensitively, matching name or department. A status line shows "Showing N of 10 employees"; with no matches a paragraph "No employees found." appears. All scenarios start from a fresh signed-in state (Alex Morgan, via signIn(page), never typing credentials) and navigate to /directory.html. Generated tests go in tests/e2e/directory/.
+Test plan for the Employee directory page (/directory.html) of the Acme HR Portal (http://localhost:8080). The page has a searchbox labelled "Search by name or department" that filters a 10-row table (columns: Name, Title, Department, Email, Location) as the user types, case-insensitively, matching name or department. A status line shows "Showing N of 10 employees"; with no matches a paragraph "No employees found." appears. All scenarios start from a fresh signed-in state (Alex Morgan, via signIn(page), never typing credentials) and navigate to /directory.html. Generated tests go in tests/directory/.
 
 Reference data (full list on load, in order): Alex Morgan | Software Engineer | Engineering | alex.morgan@acme-hr.example | New York; Priya Sharma | HR Business Partner | Human Resources | priya.sharma@acme-hr.example | New York; Daniel Kim | Engineering Manager | Engineering | daniel.kim@acme-hr.example | Austin; Maria Lopez | Payroll Specialist | Finance | maria.lopez@acme-hr.example | Chicago; James Carter | Recruiter | Human Resources | james.carter@acme-hr.example | Remote; Aisha Bello | QA Engineer | Engineering | aisha.bello@acme-hr.example | Austin; Tom Nguyen | Financial Analyst | Finance | tom.nguyen@acme-hr.example | Chicago; Sofia Rossi | Product Designer | Design | sofia.rossi@acme-hr.example | Remote; Ravi Patel | Benefits Coordinator | Human Resources | ravi.patel@acme-hr.example | New York; Emma Wilson | Sales Manager | Sales | emma.wilson@acme-hr.example | Boston.
 
@@ -10,11 +10,11 @@ Reference data (full list on load, in order): Alex Morgan | Software Engineer | 
 
 ### 1. Employee Directory
 
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `tests/seeds/seed.spec.ts`
 
 #### 1.1. Full employee list on load
 
-**File:** `tests/e2e/directory/full-list-on-load.spec.ts`
+**File:** `tests/directory/full-list-on-load.spec.ts`
 
 **Steps:**
   1. Using the seed (signed in as Alex Morgan), navigate to /directory.html.
@@ -30,7 +30,7 @@ Reference data (full list on load, in order): Alex Morgan | Software Engineer | 
 
 #### 1.2. Search by name shows a single matching row
 
-**File:** `tests/e2e/directory/search-by-name.spec.ts`
+**File:** `tests/directory/search-by-name.spec.ts`
 
 **Steps:**
   1. Navigate to /directory.html and type "Priya Sharma" into the "Search by name or department" searchbox.
@@ -45,7 +45,7 @@ Reference data (full list on load, in order): Alex Morgan | Software Engineer | 
 
 #### 1.3. Search by department lists exactly the department members
 
-**File:** `tests/e2e/directory/search-by-department.spec.ts`
+**File:** `tests/directory/search-by-department.spec.ts`
 
 **Steps:**
   1. Navigate to /directory.html and type "Engineering" into the searchbox.
@@ -61,7 +61,7 @@ Reference data (full list on load, in order): Alex Morgan | Software Engineer | 
 
 #### 1.4. Search is case-insensitive and matches partial text
 
-**File:** `tests/e2e/directory/search-case-insensitive-partial.spec.ts`
+**File:** `tests/directory/search-case-insensitive-partial.spec.ts`
 
 **Steps:**
   1. Navigate to /directory.html and type "AISHA" (upper case).
@@ -76,7 +76,7 @@ Reference data (full list on load, in order): Alex Morgan | Software Engineer | 
 
 #### 1.5. No results message and clearing the search restores all employees
 
-**File:** `tests/e2e/directory/no-results-and-clear.spec.ts`
+**File:** `tests/directory/no-results-and-clear.spec.ts`
 
 **Steps:**
   1. Navigate to /directory.html and type "zzz" into the searchbox.

@@ -2,17 +2,17 @@
 
 ## Application Overview
 
-Covers sign-in and sign-out of the Acme HR Portal (http://localhost:8080, via baseURL). Every scenario starts from a fresh, signed-out browser context on /login.html (heading "Sign in to Acme HR", Username and Password textboxes, "Sign in" button). Valid credentials are the demo credentials (DEMO_USERNAME / DEMO_PASSWORD), read from the environment, never hard-coded. Generated tests go in tests/e2e/login/ and import from ../../fixtures.js.
+Covers sign-in and sign-out of the Acme HR Portal (http://localhost:8080, via baseURL). Every scenario starts from a fresh, signed-out browser context on /login.html (heading "Sign in to Acme HR", Username and Password textboxes, "Sign in" button). Valid credentials are the demo credentials (DEMO_USERNAME / DEMO_PASSWORD), read from the environment, never hard-coded. Generated tests go in tests/login/ and import from ../fixtures.js.
 
 ## Test Scenarios
 
 ### 1. Sign-in and sign-out
 
-**Seed:** `tests/seed-logged-out.spec.ts`
+**Seed:** `tests/seeds/seed-logged-out.spec.ts`
 
 #### 1.1. Successful sign in lands on the dashboard
 
-**File:** `tests/e2e/login/sign-in-success.spec.ts`
+**File:** `tests/login/sign-in-success.spec.ts`
 
 **Steps:**
   1. Starting from the seed (signed out, on /login.html), fill Username and Password with the demo credentials (DEMO_USERNAME / DEMO_PASSWORD).
@@ -25,7 +25,7 @@ Covers sign-in and sign-out of the Acme HR Portal (http://localhost:8080, via ba
 
 #### 1.2. Invalid credentials show an error and stay on login
 
-**File:** `tests/e2e/login/sign-in-invalid.spec.ts`
+**File:** `tests/login/sign-in-invalid.spec.ts`
 
 **Steps:**
   1. Fill Username with "wronguser" and Password with "wrongpass", then click "Sign in".
@@ -39,7 +39,7 @@ Covers sign-in and sign-out of the Acme HR Portal (http://localhost:8080, via ba
 
 #### 1.3. Empty fields show a validation error
 
-**File:** `tests/e2e/login/sign-in-empty.spec.ts`
+**File:** `tests/login/sign-in-empty.spec.ts`
 
 **Steps:**
   1. With both fields empty, click "Sign in".
@@ -52,7 +52,7 @@ Covers sign-in and sign-out of the Acme HR Portal (http://localhost:8080, via ba
 
 #### 1.4. Protected page redirects to login, then returns to the requested page after sign in
 
-**File:** `tests/e2e/login/redirect-next.spec.ts`
+**File:** `tests/login/redirect-next.spec.ts`
 
 **Steps:**
   1. Navigate directly to /documents.html while signed out.
@@ -66,7 +66,7 @@ Covers sign-in and sign-out of the Acme HR Portal (http://localhost:8080, via ba
 
 #### 1.5. Protected pages are inaccessible when signed out
 
-**File:** `tests/e2e/login/protected-redirect.spec.ts`
+**File:** `tests/login/protected-redirect.spec.ts`
 
 **Steps:**
   1. Navigate directly to /dashboard.html while signed out.
@@ -77,7 +77,7 @@ Covers sign-in and sign-out of the Acme HR Portal (http://localhost:8080, via ba
 
 #### 1.6. Log out returns to login with a confirmation and ends the session
 
-**File:** `tests/e2e/login/log-out.spec.ts`
+**File:** `tests/login/log-out.spec.ts`
 
 **Steps:**
   1. Sign in with the demo credentials (DEMO_USERNAME / DEMO_PASSWORD) and confirm /dashboard.html loads.

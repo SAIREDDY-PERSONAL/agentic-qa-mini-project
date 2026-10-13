@@ -1,6 +1,6 @@
 # Specs
 
-Test plans written by the **playwright-test-planner** agent, or by hand, in Markdown. The **playwright-test-generator** agent turns each scenario into a test under `tests/e2e/`.
+Test plans written by the **playwright-test-planner** agent, or by hand, in Markdown. The **playwright-test-generator** agent turns each scenario into a test under `tests/<feature>/`.
 
 ## Workflow
 
@@ -14,7 +14,7 @@ Run these in Claude Code from the repo root:
 
 ## Conventions
 
-- **Seed:** use `tests/seed.spec.ts` (signed in, on the dashboard) for everything behind the login, and `tests/seed-logged-out.spec.ts` for login and logout scenarios.
-- **Location:** save generated tests to `tests/e2e/<feature>/<scenario-name>.spec.ts`, and import from `tests/fixtures.ts` using a `.js` extension (ESM), e.g. `import { test, expect } from "../../fixtures.js"`.
+- **Seed:** use `tests/seeds/seed.spec.ts` (signed in, on the dashboard) for everything behind the login, and `tests/seeds/seed-logged-out.spec.ts` for login and logout scenarios.
+- **Location:** save generated tests to `tests/<feature>/<scenario-name>.spec.ts`, and import from `tests/fixtures.ts` using a `.js` extension (ESM), e.g. `import { test, expect } from "../fixtures.js"`.
 - **Credentials:** never put them in a plan or a test. Use `signIn(page)`, or read `DEMO_USERNAME` / `DEMO_PASSWORD` from the environment.
-- **Chatbot:** the HR Assistant chat is covered by the data-driven LLM-as-judge suite (`tests/e2e/chatbot.spec.ts` + `src/data/eval_dataset.json`). Add chatbot cases there, not as generated UI tests.
+- **Chatbot:** the HR Assistant chat is covered by the data-driven LLM-as-judge suite (`tests/chat-agent/chatbot.spec.ts` + `src/data/eval_dataset.json`). Add chatbot cases there, not as generated UI tests.
