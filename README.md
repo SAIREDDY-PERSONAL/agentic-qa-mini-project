@@ -110,7 +110,7 @@ Requires Node.js 20+.
 
 ```bash
 npm ci
-npx playwright install   # Chromium, Firefox and WebKit
+npx playwright install chromium
 cp .env.example .env   # then add your API key (see below)
 npm test               # runs the suite; the HTML report is written to playwright-report/
 npm run test:smoke     # only the @smoke UI tests (one happy path per feature, no API key needed)
@@ -120,13 +120,7 @@ npm run typecheck      # strict TypeScript check
 
 ### Browsers
 
-`playwright.config.ts` defines one project per browser: `chromium`, `firefox`, `webkit` (Safari's engine), `mobile-chrome` (Pixel 9) and `mobile-safari` (iPhone 16). `npm test` runs the UI tests on all of them; the chatbot suite runs on Chromium only, because each case is a paid judge call and the result doesn't depend on the browser. CI and the UI judge scripts run Chromium only.
-
-```bash
-npx playwright test --project=firefox                   # one browser
-npx playwright test --project=webkit --project=mobile-safari
-BRANDED_BROWSERS=1 npx playwright test --project=google-chrome   # installed Chrome (also: microsoft-edge)
-```
+Tests run on Chromium only for now: `playwright.config.ts` defines a single `chromium` project. Projects for Firefox, WebKit (Safari's engine), Pixel 9 and iPhone 16 are in the config but commented out; to add one, uncomment it, install the browser (e.g. `npx playwright install firefox`) and run it with `--project=firefox`. The chatbot suite stays on Chromium even then, because each case is a paid judge call and the result doesn't depend on the browser.
 
 ### Configuration
 
