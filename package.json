@@ -6,6 +6,7 @@
     "test": "npx playwright test",
     "test:smoke": "playwright test --grep @smoke",
     "test:chatbot": "playwright test --grep @chat-agent",
+    "test:chatbot:live": "LIVE_AGENT=1 playwright test --grep @chat-agent",
     "typecheck": "tsc --noEmit",
     "test:judge": "UI_JUDGE=1 playwright test --project=chromium",
     "judge:demo": "PORT=8093 BUGS=upload JUDGE_DEMO=1 UI_JUDGE=1 playwright test --project=chromium tests/judge-demo tests/documents/upload-pdf.spec.ts"

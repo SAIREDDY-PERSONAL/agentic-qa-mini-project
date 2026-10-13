@@ -45,6 +45,16 @@ npx playwright test --grep "\[TC_003\]"                # one case by id
 npx playwright test --grep @happy-path                 # cases with an extra tag
 ```
 
+### Mocked vs live agent
+
+By default the agent API is mocked: each case's `mockReply` and `mockToolCalls` are returned, so a run is fast, repeatable, and tests the UI and the judge. `npm run test:chatbot:live` (`LIVE_AGENT=1`) skips the mock and sends each prompt to the real `/api/agent/run`. The test then:
+
+1. checks the real response against the API contract (`AgentResponseSchema` in `tests/fixtures.ts`: a non-empty `reply` and a `toolCalls` array of `{ toolName, args, result? }`);
+2. checks that the agent called `expectedTool`;
+3. has the judge score the reply the agent actually gave.
+
+In live mode `mockReply` and `mockToolCalls` are ignored. The report shows which mode each test ran in (the `agent` annotation). Here the "real" agent is the portal's keyword-based stand-in in `app/server.mjs`; in a real project it would be the deployed agent.
+
 ## Demo HR portal
 
 Run `node app/server.mjs` and open http://localhost:8080. Sign in with `demo` / `demo123`.
@@ -115,6 +125,7 @@ cp .env.example .env   # then add your API key (see below)
 npm test               # runs the suite; the HTML report is written to playwright-report/
 npm run test:smoke     # only the @smoke UI tests (one happy path per feature, no API key needed)
 npm run test:chatbot   # only the @chat-agent LLM-as-judge suite (needs an API key)
+npm run test:chatbot:live  # the same suite against the real agent instead of the mock
 npm run typecheck      # strict TypeScript check
 ```
 
@@ -171,5 +182,5 @@ playwright.config.ts              Playwright config + local web server
 
 ## Limitations
 
-- The agent backend is mocked. Replies and tool calls come from the dataset, so the suite tests the evaluation pipeline and UI, not a live model's decisions.
+- The agent backend is mocked by default. Replies and tool calls come from the dataset, so the default run tests the evaluation pipeline and UI, not a live model's decisions. `npm run test:chatbot:live` grades the real agent, which in this repo is a keyword-based stand-in rather than an LLM.
 - Each case runs once. Rerunning the same prompt several times to measure consistency is a natural next step.

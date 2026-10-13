@@ -1,4 +1,5 @@
 import { test as base, expect, type Locator, type Page } from "@playwright/test";
+import { z } from "zod";
 import {
   findScenario,
   formatVerdict,
@@ -16,7 +17,20 @@ import {
   TimeOffPage,
 } from "./pages/index.js";
 
-export type ToolCall = { toolName: string; args: Record<string, unknown> };
+export type ToolCall = { toolName: string; args: Record<string, unknown>; result?: unknown };
+
+// The contract of POST /api/agent/run, agreed with the agent's owners. A live run checks the real
+// response against it: the reply's wording and the tools chosen vary, the shape must not.
+export const AgentResponseSchema = z.object({
+  reply: z.string().min(1),
+  toolCalls: z.array(
+    z.object({
+      toolName: z.string().min(1),
+      args: z.record(z.string(), z.unknown()),
+      result: z.unknown().optional(),
+    }),
+  ),
+});
 
 // Signs in through the login API and seeds the session before any page script runs,
 // so tests start on protected pages without going through the login form.
@@ -76,6 +90,16 @@ export class MockAgent {
         body: JSON.stringify({ reply, toolCalls })
       })
     );
+  }
+
+  // Live mode: lets the request reach the real agent and records the tool calls it returned.
+  // Call it before sending the prompt; await the result after the reply is shown.
+  async recordLiveCalls() {
+    const response = await this.page.waitForResponse("**/api/agent/run*");
+    expect(response.ok(), `agent API returned ${response.status()}`).toBeTruthy();
+    const parsed = AgentResponseSchema.safeParse(await response.json());
+    expect(parsed.success, `agent response breaks the API contract:\n${parsed.error && z.prettifyError(parsed.error)}`).toBe(true);
+    this.toolCalls = parsed.data!.toolCalls;
   }
 }
 
