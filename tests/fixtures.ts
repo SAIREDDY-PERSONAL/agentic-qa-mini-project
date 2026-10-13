@@ -89,7 +89,7 @@ type PageObjects = {
 };
 
 export const test = base.extend<PageObjects & { chatPage: ChatPage; mockAgent: MockAgent; uiJudge: void }>({
-  // Page objects for the e2e tests (see tests/pages). They only wrap the page: sign in first with signIn(page).
+  // Page objects for the portal UI tests (see tests/pages). They only wrap the page: sign in first with signIn(page).
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
   dashboardPage: async ({ page }, use) => use(new DashboardPage(page)),
   timeOffPage: async ({ page }, use) => use(new TimeOffPage(page)),

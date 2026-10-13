@@ -16,7 +16,7 @@ on:
         type: string
         default: "@smoke"
       tests:
-        description: "Optional test files or folders, space separated, e.g. tests/e2e/login tests/e2e/time-off/weekend-only.spec.ts"
+        description: "Optional test files or folders, space separated, e.g. tests/login tests/time-off/weekend-only.spec.ts"
         type: string
         default: ""
 
@@ -58,7 +58,7 @@ jobs:
           grep="($(echo "$tags" | paste -sd'|' -))(\\s|\$)"
           echo "Running tests matching $grep ${TESTS:+in $TESTS}"
           # TESTS is left unquoted so several paths become separate arguments
-          npx playwright test --grep "$grep" $TESTS
+          npx playwright test --project=chromium --grep "$grep" $TESTS
 
       - name: Upload Test Report
         if: always()

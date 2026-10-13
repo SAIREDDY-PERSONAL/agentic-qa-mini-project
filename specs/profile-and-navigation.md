@@ -8,11 +8,11 @@ Test plan for the My profile page (/profile.html) and the header navigation of t
 
 ### 1. My Profile
 
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `tests/seeds/seed.spec.ts`
 
 #### 1.1. Read-only fields show the user's data and cannot be edited
 
-**File:** `tests/e2e/profile/read-only-fields.spec.ts`
+**File:** `tests/profile/read-only-fields.spec.ts`
 
 **Steps:**
   1. Navigate to /profile.html
@@ -30,7 +30,7 @@ Test plan for the My profile page (/profile.html) and the header navigation of t
 
 #### 1.2. Default editable values are pre-filled
 
-**File:** `tests/e2e/profile/default-values.spec.ts`
+**File:** `tests/profile/default-values.spec.ts`
 
 **Steps:**
   1. Navigate to /profile.html
@@ -40,7 +40,7 @@ Test plan for the My profile page (/profile.html) and the header navigation of t
 
 #### 1.3. Save valid changes and confirm they persist after reload
 
-**File:** `tests/e2e/profile/save-valid-changes.spec.ts`
+**File:** `tests/profile/save-valid-changes.spec.ts`
 
 **Steps:**
   1. Navigate to /profile.html, fill Phone with '555-123-4567' and Home address with '99 Oak Ave, Austin, TX 78701'
@@ -54,7 +54,7 @@ Test plan for the My profile page (/profile.html) and the header navigation of t
 
 #### 1.4. Invalid phone format is rejected
 
-**File:** `tests/e2e/profile/invalid-phone.spec.ts`
+**File:** `tests/profile/invalid-phone.spec.ts`
 
 **Steps:**
   1. Navigate to /profile.html, fill Phone with '12345' and click 'Save changes'
@@ -67,7 +67,7 @@ Test plan for the My profile page (/profile.html) and the header navigation of t
 
 #### 1.5. Empty home address is rejected
 
-**File:** `tests/e2e/profile/empty-address.spec.ts`
+**File:** `tests/profile/empty-address.spec.ts`
 
 **Steps:**
   1. Navigate to /profile.html, clear Home address (leave Phone valid) and click 'Save changes'
@@ -78,11 +78,11 @@ Test plan for the My profile page (/profile.html) and the header navigation of t
 
 ### 2. Header Navigation
 
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `tests/seeds/seed.spec.ts`
 
 #### 2.1. Header links navigate to each page and mark the current link
 
-**File:** `tests/e2e/navigation/header-links.spec.ts`
+**File:** `tests/navigation/header-links.spec.ts`
 
 **Steps:**
   1. On /dashboard.html, inspect the 'Main' navigation and header

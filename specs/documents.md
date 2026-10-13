@@ -2,17 +2,17 @@
 
 ## Application Overview
 
-Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The page has a "Document type" select (options: Select a type, Government ID, W-4 Tax Form, Certification), a "File" input (PDF, PNG, JPG; max 2 MB), an "Upload" button, a status message (test id upload-message) and a "My documents" table (columns File name, Type, Size, Uploaded) with empty state "No documents uploaded yet." (test id no-documents). Data lives in sessionStorage, so every test starts with no documents. Conventions: all scenarios start from the seed (signed in as Alex Morgan via signIn(page), never typing credentials). Import test/expect from "../../fixtures.js". Upload files MUST be created at runtime with setInputFiles({ name, mimeType, buffer }); no files checked into the repo. A successful upload is only proven by ALL of: the success message, a new row in "My documents" with the correct file name and type, and the empty-state text "No documents uploaded yet." no longer visible. A success message alone is not sufficient. Generated tests go in tests/e2e/documents/.
+Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The page has a "Document type" select (options: Select a type, Government ID, W-4 Tax Form, Certification), a "File" input (PDF, PNG, JPG; max 2 MB), an "Upload" button, a status message (test id upload-message) and a "My documents" table (columns File name, Type, Size, Uploaded) with empty state "No documents uploaded yet." (test id no-documents). Data lives in sessionStorage, so every test starts with no documents. Conventions: all scenarios start from the seed (signed in as Alex Morgan via signIn(page), never typing credentials). Import test/expect from "../fixtures.js". Upload files MUST be created at runtime with setInputFiles({ name, mimeType, buffer }); no files checked into the repo. A successful upload is only proven by ALL of: the success message, a new row in "My documents" with the correct file name and type, and the empty-state text "No documents uploaded yet." no longer visible. A success message alone is not sufficient. Generated tests go in tests/documents/.
 
 ## Test Scenarios
 
 ### 1. Documents page
 
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `tests/seeds/seed.spec.ts`
 
 #### 1.1. Upload a PDF successfully
 
-**File:** `tests/e2e/documents/upload-pdf.spec.ts`
+**File:** `tests/documents/upload-pdf.spec.ts`
 
 **Steps:**
   1. Navigate to /documents.html. Verify heading 'Documents', and that 'No documents uploaded yet.' is visible and the table has no data rows.
@@ -28,7 +28,7 @@ Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The
 
 #### 1.2. Upload an image (PNG) successfully
 
-**File:** `tests/e2e/documents/upload-image.spec.ts`
+**File:** `tests/documents/upload-image.spec.ts`
 
 **Steps:**
   1. Navigate to /documents.html.
@@ -44,7 +44,7 @@ Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The
 
 #### 1.3. Validation: no document type selected
 
-**File:** `tests/e2e/documents/validation-no-type.spec.ts`
+**File:** `tests/documents/validation-no-type.spec.ts`
 
 **Steps:**
   1. Navigate to /documents.html and leave 'Document type' on 'Select a type'.
@@ -56,7 +56,7 @@ Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The
 
 #### 1.4. Validation: no file chosen
 
-**File:** `tests/e2e/documents/validation-no-file.spec.ts`
+**File:** `tests/documents/validation-no-file.spec.ts`
 
 **Steps:**
   1. Navigate to /documents.html, select 'Government ID' in 'Document type', choose no file.
@@ -68,7 +68,7 @@ Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The
 
 #### 1.5. Validation: unsupported file type
 
-**File:** `tests/e2e/documents/validation-unsupported-type.spec.ts`
+**File:** `tests/documents/validation-unsupported-type.spec.ts`
 
 **Steps:**
   1. Navigate to /documents.html and select 'Certification' in 'Document type'.
@@ -80,7 +80,7 @@ Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The
 
 #### 1.6. Validation: file over 2 MB
 
-**File:** `tests/e2e/documents/validation-file-too-large.spec.ts`
+**File:** `tests/documents/validation-file-too-large.spec.ts`
 
 **Steps:**
   1. Navigate to /documents.html and select 'Government ID' in 'Document type'.
@@ -92,7 +92,7 @@ Test plan for /documents.html of the Acme HR Portal (http://localhost:8080). The
 
 #### 1.7. Dashboard 'Documents on file' count reflects an upload
 
-**File:** `tests/e2e/documents/dashboard-count.spec.ts`
+**File:** `tests/documents/dashboard-count.spec.ts`
 
 **Steps:**
   1. Navigate to /dashboard.html (seed state).
