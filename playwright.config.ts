@@ -31,22 +31,14 @@ export default defineConfig({
     // Full trace for failed tests, for debugging and the healer agent
     trace: "retain-on-failure",
   },
-  // Run one browser with --project, e.g. npx playwright test --project=firefox.
-  // Browsers come from `npx playwright install`; CI installs and runs Chromium only.
+  // Only Chromium runs for now. To add a browser, uncomment its project and install it
+  // (e.g. npx playwright install firefox), then run it with --project=firefox.
   projects: [
     browser("chromium", { ...devices["Desktop Chrome"] }, true),
     // browser("firefox", { ...devices["Desktop Firefox"] }),
     // browser("webkit", { ...devices["Desktop Safari"] }),
     // browser("mobile-chrome", { ...devices["Pixel 9"] }),
     // browser("mobile-safari", { ...devices["iPhone 16"] }),
-    // Branded browsers use the copy installed on the machine, so they are opt-in: BRANDED_BROWSERS=1
-    // (install them with: npx playwright install chrome msedge)
-    ...(process.env.BRANDED_BROWSERS
-      ? [
-          browser("google-chrome", { ...devices["Desktop Chrome"], channel: "chrome" }),
-          browser("microsoft-edge", { ...devices["Desktop Edge"], channel: "msedge" }),
-        ]
-      : []),
   ],
   webServer: {
     command: "node app/server.mjs",
