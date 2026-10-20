@@ -7,3 +7,5 @@ playwright/.cache/
 .DS_Store
 # Playwright MCP scratch output (console logs, page snapshots)
 .playwright-mcp/
+# SQLite database written by the demo server (app/server.mjs)
+.data/

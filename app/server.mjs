@@ -4,12 +4,16 @@
 //   PORT                          default 8080
 //   DEMO_USERNAME / DEMO_PASSWORD default demo / demo123
 //   BUGS                          comma-separated seeded bugs to switch on, e.g. "upload"
+//   HR_DB_PATH                    SQLite file for leave requests, default .data/hr.db
 import { createServer } from "node:http";
+import { mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { dirname, extname, join, normalize } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 
 const PUBLIC_DIR = fileURLToPath(new URL("./public/", import.meta.url));
+const HR_DB_PATH = process.env.HR_DB_PATH ?? fileURLToPath(new URL("../.data/hr.db", import.meta.url));
 const PORT = Number(process.env.PORT ?? 8080);
 const USERNAME = process.env.DEMO_USERNAME ?? "demo";
 const PASSWORD = process.env.DEMO_PASSWORD ?? "demo123";
@@ -29,16 +33,41 @@ const HR_CONTACT = {
   phone: "ext. 4471",
 };
 
-// The "HR system" behind the agent's tools: a PTO balance and the leave requests the agent
-// submitted. It is kept separately for each chat conversation, so tests running at the same time
-// don't change each other's data. Tests read it with GET /api/time-off/<conversationId>.
-const timeOffByConversation = new Map();
+// The "HR system" behind the agent's tools: a SQLite database with one table of leave requests.
+// Each chat conversation has its own rows, so tests running at the same time don't change each
+// other's data, and the PTO balance is 15 days minus the days that conversation has booked.
+// The tables are recreated every time the server starts. Tests can read the data with
+// GET /api/time-off/<conversationId>, or query the database file directly.
+mkdirSync(dirname(HR_DB_PATH), { recursive: true });
+const db = new DatabaseSync(HR_DB_PATH);
+db.exec(`
+  PRAGMA journal_mode = WAL;
+  DROP TABLE IF EXISTS leave_requests;
+  CREATE TABLE leave_requests (
+    request_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
+    employee_id     TEXT NOT NULL,
+    type            TEXT NOT NULL,
+    days            INTEGER NOT NULL,
+    status          TEXT NOT NULL
+  );
+`);
 
 function timeOffFor(conversationId) {
-  if (!timeOffByConversation.has(conversationId)) {
-    timeOffByConversation.set(conversationId, { balanceDays: PTO_BALANCE_DAYS, requests: [] });
-  }
-  return timeOffByConversation.get(conversationId);
+  const rows = db
+    .prepare("SELECT request_id, type, days, status FROM leave_requests WHERE conversation_id = ? ORDER BY request_id")
+    .all(conversationId);
+  const requests = rows.map((row) => ({ requestId: `REQ-${row.request_id}`, type: row.type, days: row.days, status: row.status }));
+  const daysBooked = requests.reduce((sum, request) => sum + request.days, 0);
+  return { balanceDays: PTO_BALANCE_DAYS - daysBooked, requests };
+}
+
+// Saves a leave request and returns its id, e.g. "REQ-7"
+function saveLeaveRequest(conversationId, days) {
+  const result = db
+    .prepare("INSERT INTO leave_requests (conversation_id, employee_id, type, days, status) VALUES (?, ?, 'vacation', ?, 'pending')")
+    .run(conversationId, DEMO_USER.employeeId, days);
+  return `REQ-${result.lastInsertRowid}`;
 }
 
 const CONTENT_TYPES = {
@@ -66,13 +95,13 @@ async function readJsonBody(req) {
 
 // Keyword-based stand-in for the real HR agent: returns a reply plus the tool calls it "made".
 // history holds the earlier messages of the conversation: [{ role: "user" | "assistant", text }]
-// timeOff is this conversation's HR data, which submit_time_off changes
+// conversationId picks this conversation's rows in the HR database
 // failure is set by tests to simulate a broken system, e.g. "hr-down" makes check_leave_balance fail
-function runAgent(prompt, history, timeOff, failure) {
+function runAgent(prompt, history, conversationId, failure) {
   const text = String(prompt ?? "").toLowerCase();
   const lastUserMessage = String(history.filter((m) => m.role === "user").at(-1)?.text ?? "").toLowerCase();
   const asksForTimeOff = (message) => /\boff\b|vacation|leave/.test(message);
-  const balance = timeOff.balanceDays;
+  const balance = timeOffFor(conversationId).balanceDays;
   const hrDown = failure === "hr-down";
   const balanceCall = {
     toolName: "check_leave_balance",
@@ -121,13 +150,9 @@ function runAgent(prompt, history, timeOff, failure) {
       };
     }
 
-    // Save the request in the HR system and take the days off the balance.
+    // Save the request in the HR database (which also lowers the balance).
     // Seeded bug "agent-no-save": the agent says it submitted the request, but nothing is saved.
-    const request = { requestId: `REQ-${timeOff.requests.length + 1}`, type: "vacation", days, status: "pending" };
-    if (!BUGS.includes("agent-no-save")) {
-      timeOff.requests.push(request);
-      timeOff.balanceDays -= days;
-    }
+    const requestId = BUGS.includes("agent-no-save") ? "REQ-unsaved" : saveLeaveRequest(conversationId, days);
 
     return {
       reply: `I checked your PTO balance (${balance} days available) and submitted a vacation request for ${days} days. It is pending manager approval.`,
@@ -136,7 +161,7 @@ function runAgent(prompt, history, timeOff, failure) {
         {
           toolName: "submit_time_off",
           args: { employeeId: DEMO_USER.employeeId, type: "vacation", days },
-          result: { status: "pending manager approval", requestId: request.requestId },
+          result: { status: "pending manager approval", requestId },
         },
       ],
     };
@@ -166,9 +191,12 @@ async function handleApi(req, res, path) {
   }
   if (req.method === "POST" && path === "/api/agent/run") {
     const { prompt, history, conversationId } = await readJsonBody(req);
-    const timeOff = timeOffFor(String(conversationId ?? "default"));
+    if (typeof prompt !== "string" || !prompt.trim()) {
+      return sendJson(res, 400, { error: "prompt is required" });
+    }
     const failure = req.headers["x-simulate-failure"];
-    return sendJson(res, 200, runAgent(prompt, Array.isArray(history) ? history : [], timeOff, failure));
+    const reply = runAgent(prompt, Array.isArray(history) ? history : [], String(conversationId ?? "default"), failure);
+    return sendJson(res, 200, reply);
   }
   // What the HR system holds for one conversation: { balanceDays, requests }
   if (req.method === "GET" && path.startsWith("/api/time-off/")) {

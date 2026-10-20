@@ -42,7 +42,7 @@ export default defineConfig({
     // browser("mobile-safari", { ...devices["iPhone 16"] }),
   ],
   webServer: {
-    command: "node app/server.mjs",
+    command: "node --disable-warning=ExperimentalWarning app/server.mjs",
     url: BASE_URL,
     // Never reuse a running server when bugs are switched on: it would not have them
     reuseExistingServer: !process.env.CI && !process.env.BUGS,

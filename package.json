@@ -7,12 +7,13 @@
     "test:chatbot": "playwright test --grep @chat-agent",
     "test:chatbot:live": "LIVE_AGENT=1 playwright test --grep @chat-agent",
     "test:chatbot:repeat": "EVAL_RUNS=5 EVAL_MIN_PASS_RATE=0.8 playwright test --grep @chat-agent",
+    "test:api": "playwright test --grep @api",
     "typecheck": "tsc --noEmit",
     "test:judge": "UI_JUDGE=1 playwright test --project=chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
-    "@types/node": "^20.19.43",
+    "@types/node": "^22.20.5",
     "dotenv": "^18.0.6",
     "typescript": "^7.0.2"
   },
@@ -21,5 +22,8 @@
     "@langchain/ollama": "^1.3.0",
     "@langchain/openai": "^1.6.2",
     "zod": "^4.6.5"
+  },
+  "engines": {
+    "node": ">=22.13"
   }
 }
