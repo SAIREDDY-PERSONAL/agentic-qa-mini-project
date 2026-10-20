@@ -6,6 +6,7 @@
     "test": "npx playwright test",
     "test:chatbot": "playwright test --grep @chat-agent",
     "test:chatbot:live": "LIVE_AGENT=1 playwright test --grep @chat-agent",
+    "test:chatbot:repeat": "EVAL_RUNS=5 EVAL_MIN_PASS_RATE=0.8 playwright test --grep @chat-agent",
     "typecheck": "tsc --noEmit",
     "test:judge": "UI_JUDGE=1 playwright test --project=chromium"
   },

@@ -62,34 +62,46 @@ export class ChatPage {
     await this.input.waitFor({ state: "visible" });
   }
 
-  async send(prompt: string) {
+  // Sends a question and returns the chatbot's answer. It waits for a new answer bubble,
+  // so in a conversation it never returns the previous turn's answer.
+  async ask(prompt: string, timeout = 15000) {
+    const answersBefore = await this.responses.count();
     await this.input.fill(prompt);
     await this.sendButton.click();
-  }
-
-  // Waits for the latest response bubble and returns its text
-  async lastResponseText(timeout = 15000) {
-    const bubble = this.responses.last();
-    await expect(bubble).toBeVisible({ timeout });
-    return bubble.innerText();
+    await expect(this.responses).toHaveCount(answersBefore + 1, { timeout });
+    return this.responses.last().innerText();
   }
 }
 
+export type AgentTurn = { reply: string; toolCalls: ToolCall[] };
+
+// The HR system's data for one conversation (GET /api/time-off/<conversationId>)
+export type TimeOffState = {
+  balanceDays: number;
+  requests: { requestId: string; type: string; days: number; status: string }[];
+};
+
 export class MockAgent {
   toolCalls: ToolCall[] = [];
+  conversationId?: string; // live mode: the chat page's id for the current conversation
 
   constructor(private readonly page: Page) {}
 
-  // Intercepts the agent API and fulfills it with the given reply/tool calls
-  async respondWith(reply: string, toolCalls: ToolCall[] = []) {
-    this.toolCalls = toolCalls;
-    await this.page.route("**/api/agent/run*", (route) =>
-      route.fulfill({
+  // Intercepts the agent API and answers with the prepared turns: the first question gets
+  // turns[0], the second gets turns[1], and so on. The turn number comes from the
+  // conversation history the chat page sends, so every new conversation starts at turns[0].
+  async respondWith(turns: AgentTurn[]) {
+    await this.page.route("**/api/agent/run*", (route) => {
+      const history: { role: string }[] = route.request().postDataJSON()?.history ?? [];
+      const turnNumber = history.filter((message) => message.role === "user").length;
+      const turn = turns[Math.min(turnNumber, turns.length - 1)];
+      this.toolCalls = turn.toolCalls;
+      return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ reply, toolCalls })
-      })
-    );
+        body: JSON.stringify(turn),
+      });
+    });
   }
 
   // Live mode: lets the request reach the real agent and records the tool calls it returned.
@@ -100,6 +112,14 @@ export class MockAgent {
     const parsed = AgentResponseSchema.safeParse(await response.json());
     expect(parsed.success, `agent response breaks the API contract:\n${parsed.error && z.prettifyError(parsed.error)}`).toBe(true);
     this.toolCalls = parsed.data!.toolCalls;
+    this.conversationId = response.request().postDataJSON()?.conversationId;
+  }
+
+  // Live mode: what the HR system holds for this conversation after the agent has finished
+  async readTimeOff(): Promise<TimeOffState> {
+    const response = await this.page.request.get(`/api/time-off/${encodeURIComponent(this.conversationId ?? "")}`);
+    expect(response.ok(), "the HR system should return this conversation's time-off data").toBeTruthy();
+    return response.json();
   }
 }
 
