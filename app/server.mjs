@@ -26,6 +26,7 @@ const DEMO_USER = {
   email: "alex.morgan@acme-hr.example",
 };
 const PTO_BALANCE_DAYS = 15;
+const NUMBER_WORDS = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
 const HR_CONTACT = {
   name: "Priya Sharma",
   title: "HR Business Partner, Engineering",
@@ -110,7 +111,7 @@ function runAgent(prompt, history, conversationId, failure) {
   };
 
   // Guardrail: don't follow instructions to ignore the rules
-  if (/ignore (all|any|your|previous|the)|admin mode|developer mode|system prompt/.test(text)) {
+  if (/ignore (all|any|your|previous|the)|admin mode|developer mode|system prompt|pretend (you are|you're|to be)|act as/.test(text)) {
     return {
       reply: "I can't change how I work or bypass HR rules. I can help with your own time off, your HR contact, documents or your profile.",
       toolCalls: [],
@@ -133,9 +134,14 @@ function runAgent(prompt, history, conversationId, failure) {
   }
 
   // A time-off request, either in this message or in the one before (e.g. "I'd like time off" then "3 days")
-  const daysMatch = text.match(/(\d+)\s*days?/);
+  // The number of days can be written as digits ("3 days") or as a word ("three days")
+  const daysMatch = text.match(/(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten)\s*days?/);
   if (daysMatch && (/off|vacation|leave|pto/.test(text) || asksForTimeOff(lastUserMessage))) {
-    const days = Number(daysMatch[1]);
+    const days = NUMBER_WORDS[daysMatch[1]] ?? Number(daysMatch[1]);
+    // Zero days isn't a real request: ask again instead of booking it
+    if (days < 1) {
+      return { reply: "A time-off request needs at least 1 day. How many days would you like to take off?", toolCalls: [] };
+    }
     // The balance check failed: say so, and don't submit anything
     if (hrDown) {
       return {
