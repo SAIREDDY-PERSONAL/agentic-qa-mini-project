@@ -3,6 +3,8 @@ import { defineConfig, devices, type Project } from "@playwright/test";
 // PORT and BUGS are passed through to app/server.mjs, e.g. PORT=8093 BUGS=upload
 const PORT = Number(process.env.PORT ?? 8080);
 const BASE_URL = `http://localhost:${PORT}`;
+const API_URL = process.env.API_URL ?? "https://restful-booker.herokuapp.com/";
+
 
 // tests/judge-demo holds deliberately weak tests that only run in the judge demo (npm run judge:demo)
 const judgeDemo = process.env.JUDGE_DEMO ? [] : [/@judge-demo/];
@@ -14,6 +16,8 @@ const browser = (name: string, use: Project["use"], chromium = false): Project =
   name,
   use,
   grepInvert: chromium ? judgeDemo : [...judgeDemo, ...chromiumOnly],
+  // API tests run once, in their own project
+  testIgnore: /tests\/api\//,
 });
 
 export default defineConfig({
@@ -35,6 +39,17 @@ export default defineConfig({
   // (e.g. npx playwright install firefox), then run it with --project=firefox.
   projects: [
     browser("chromium", { ...devices["Desktop Chrome"] }, true),
+    {
+    name: "api",
+    testDir: "./tests/api",
+    use: {
+      baseURL: API_URL,
+      extraHTTPHeaders: {
+        Accept: "application/json",
+        // Authorization: `Bearer ${process.env.API_TOKEN}`,
+      },
+    },
+  },
     // browser("firefox", { ...devices["Desktop Firefox"] }),
     // browser("webkit", { ...devices["Desktop Safari"] }),
     // browser("mobile-chrome", { ...devices["Pixel 9"] }),
