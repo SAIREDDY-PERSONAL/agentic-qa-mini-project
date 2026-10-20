@@ -2,7 +2,7 @@ name: Chatbot Evaluation
 
 # Runs the chatbot LLM-as-judge suite (tests/chat-agent, tagged @chat-agent) on its own.
 # Every test case makes one paid judge call, so it runs only when chatbot code or data changes,
-# or by hand from the Actions tab (optionally with another judge model).
+# or by hand from the Actions tab (optionally with another judge model, or several runs per case).
 # Needs ANTHROPIC_API_KEY or OPENAI_API_KEY as a repository secret.
 on:
   push:
@@ -11,6 +11,9 @@ on:
       - 'tests/chat-agent/**'
       - 'tests/fixtures.ts'
       - 'src/evaluators/llm_judge.ts'
+      - 'src/evaluators/consistency.ts'
+      - 'src/evaluators/tool_checks.ts'
+      - 'src/evaluators/state_checks.ts'
       - 'src/data/eval_dataset.json'
       - 'src/data/eval_dataset.ts'
       - 'app/public/chat.html'
@@ -22,6 +25,9 @@ on:
       - 'tests/chat-agent/**'
       - 'tests/fixtures.ts'
       - 'src/evaluators/llm_judge.ts'
+      - 'src/evaluators/consistency.ts'
+      - 'src/evaluators/tool_checks.ts'
+      - 'src/evaluators/state_checks.ts'
       - 'src/data/eval_dataset.json'
       - 'src/data/eval_dataset.ts'
       - 'app/public/chat.html'
@@ -33,6 +39,14 @@ on:
         description: "Anthropic judge model (empty = the default, claude-haiku-5-5)"
         type: string
         default: ""
+      runs:
+        description: "Times to run each case; above 1 a case passes on its pass rate (EVAL_RUNS)"
+        type: string
+        default: "1"
+      min_pass_rate:
+        description: "Share of runs that must pass, 0-1 (EVAL_MIN_PASS_RATE)"
+        type: string
+        default: "1"
 
 concurrency:
   group: chatbot-eval-${{ github.ref }}
@@ -47,6 +61,9 @@ jobs:
       ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_MODEL: ${{ inputs.model }}
+      # Push and pull request runs have no inputs, so they run each case once
+      EVAL_RUNS: ${{ inputs.runs || '1' }}
+      EVAL_MIN_PASS_RATE: ${{ inputs.min_pass_rate || '1' }}
     steps:
       # Without a key the judge falls back to a local Ollama model, which the runner does not have
       - name: Check judge API key
@@ -62,7 +79,7 @@ jobs:
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Project Dependencies & Browsers

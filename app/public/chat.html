@@ -25,6 +25,8 @@
     await requireAuth();
     const input = document.getElementById("chat-input");
     const history = document.getElementById("chat-history");
+    const messages = []; // the conversation so far: { role: "user" | "assistant", text }
+    const conversationId = crypto.randomUUID(); // a new one every time the page opens
 
     function addBubble(text, kind) {
       const bubble = document.createElement("div");
@@ -41,13 +43,15 @@
       input.value = "";
       addBubble(userText, "user");
 
+      // The earlier messages go with every question, so the agent can follow the conversation
       const response = await fetch("/api/agent/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userText }),
+        body: JSON.stringify({ prompt: userText, history: messages, conversationId }),
       });
       const data = await response.json();
       addBubble(data.reply, "bot");
+      messages.push({ role: "user", text: userText }, { role: "assistant", text: data.reply });
     });
   </script>
 </body>
