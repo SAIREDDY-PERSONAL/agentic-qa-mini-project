@@ -97,6 +97,19 @@ Failure cases (`@failure`) break part of the system on purpose. `"simulateFailur
 npx playwright test --grep "@guardrail|@failure"
 ```
 
+### API and database tests
+
+`tests/api/agent-api.spec.ts` (`@api`, `npm run test:api`) calls `/api/agent/run` directly, without the browser or the judge, so it is fast and needs no API key. It checks the response format, that a missing prompt gets a 400, that earlier messages are used, and how the agent behaves when the HR system is down.
+
+The demo server saves leave requests in a SQLite database (`.data/hr.db`, one `leave_requests` table, recreated when the server starts). After each call the tests query it with SQL (`tests/hr-db.ts`, read-only) to check what was really saved:
+
+```ts
+queryHrDb("SELECT employee_id, type, days, status FROM leave_requests WHERE conversation_id = ?", conversationId)
+// → [{ employee_id: "1042", type: "vacation", days: 3, status: "pending" }]
+```
+
+With `BUGS=agent-no-save` the agent still says "submitted", and the three tests that expect a saved row fail.
+
 ### Mocked vs live agent
 
 By default the agent API is mocked: each case's `mockReply` and `mockToolCalls` are returned, so a run is fast, repeatable, and tests the UI and the judge. `npm run test:chatbot:live` (`LIVE_AGENT=1`) skips the mock and sends each prompt to the real `/api/agent/run`. The test then:
@@ -182,7 +195,7 @@ The judge is opt-in (`UI_JUDGE=1`) because it makes one vision-model call per UI
 
 ## Running it
 
-Requires Node.js 20+.
+Requires Node.js 22.13+ (the demo server uses Node's built-in SQLite).
 
 ```bash
 npm ci
@@ -192,6 +205,7 @@ npm test               # runs the suite; the HTML report is written to playwrigh
 npm run test:smoke     # only the @smoke UI tests (one happy path per feature, no API key needed)
 npm run test:chatbot   # only the @chat-agent LLM-as-judge suite (needs an API key)
 npm run test:chatbot:live  # the same suite against the real agent instead of the mock
+npm run test:api      # API and database tests for the agent (no browser, no API key)
 npm run typecheck      # strict TypeScript check
 ```
 
@@ -238,6 +252,8 @@ src/data/eval_dataset.ts          Zod schema that validates the cases
 src/evaluators/llm_judge.ts       LLM-as-judge evaluator
 src/evaluators/consistency.ts     repeated-run pass rate, score spread and agreement
 tests/fixtures.ts                 chatPage + mockAgent + page-object fixtures
+tests/api/agent-api.spec.ts       API and database tests for the agent
+tests/hr-db.ts                    read-only SQL helper for the HR database
 tests/pages/                      page objects for the portal (one per page, shared header in BasePage)
 tests/chat-agent/chatbot.spec.ts  chatbot LLM-as-judge evaluation suite (data-driven)
 tests/<feature>/                  agent-generated UI tests for the portal, one folder per feature
