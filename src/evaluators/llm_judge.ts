@@ -51,7 +51,12 @@ export function createChatModel() {
 const score = (question: string) => z.number().int().min(0).max(10).describe(question);
 const JudgeOutputSchema = z.object({
   hallucinations: z
-    .array(z.string())
+    .array(
+      z.object({
+        quote: z.string().describe("The exact words from the reply that state the made-up fact"),
+        reason: z.string().describe("Why it is not supported"),
+      }),
+    )
     .describe("Every specific fact in the reply that is not in the context, the tool results or the user's own messages. Empty if none."),
   accuracy: score("Are the facts in the reply correct according to the context and tool results?"),
   relevance: score("Does the reply answer what the user asked?"),
@@ -60,10 +65,16 @@ const JudgeOutputSchema = z.object({
   reasoning: z.string().describe("A short explanation of the scores, 2 to 4 sentences."),
 });
 
-export type JudgeVerdict = z.infer<typeof JudgeOutputSchema> & {
+export type JudgeVerdict = Omit<z.infer<typeof JudgeOutputSchema>, "hallucinations"> & {
+  hallucinations: string[]; // made-up facts, as '"<quote>" - <reason>'
   score: number; // average of the four scores
   isGrounded: boolean; // true when the judge found no made-up facts
 };
+
+// Lower case, single spaces and no quote marks or full stop around it, so a quote still matches
+// if the judge changed the spacing or capitals, or put it in quotation marks
+const normalize = (text: string) =>
+  text.toLowerCase().replace(/\s+/g, " ").trim().replace(/^["'“”‘’]+|["'“”‘’.]+$/g, "");
 
 const judgeModel = createChatModel().withStructuredOutput(JudgeOutputSchema);
 
@@ -90,8 +101,9 @@ ${earlier}<user_message>${params.userPrompt}</user_message>
 
 How to grade:
 - hallucinations: list each specific fact in the reply (a number, name, date, status or rule) that is not
-  stated in the context, the tool results, or the user's messages. Do not list polite phrases, offers of help,
-  or suggestions such as "contact HR".
+  stated in the context, the tool results, or the user's messages. For each one, quote the exact words from the
+  reply. Do not list polite phrases, offers of help, or suggestions such as "contact HR". If there are none,
+  return an empty list; never add an item to say that nothing was found.
 - accuracy (0-10): 10 means every fact in the reply matches the context and tool results.
 - relevance (0-10): 10 means it answers what the user asked. A polite refusal of an off-topic or forbidden
   request is fully relevant.
@@ -105,9 +117,18 @@ tools were called, for example the format of their arguments.
 
   const output = await judgeModel.invoke(prompt);
   const average = (output.accuracy + output.relevance + output.completeness + output.policy) / 4;
+
+  // Keep only made-up facts whose quote really is in the reply. This drops notes such as
+  // "no unsupported facts were stated", and claims about things the reply never said.
+  const reply = normalize(params.chatbotResponseText);
+  const hallucinations = output.hallucinations
+    .filter((h) => reply.includes(normalize(h.quote)))
+    .map((h) => `"${h.quote}" - ${h.reason}`);
+
   return {
     ...output,
+    hallucinations,
     score: Math.round(average * 10) / 10,
-    isGrounded: output.hallucinations.length === 0,
+    isGrounded: hallucinations.length === 0,
   };
 }
