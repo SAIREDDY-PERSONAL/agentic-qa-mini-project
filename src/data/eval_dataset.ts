@@ -53,15 +53,7 @@ export const EvalCaseSchema = z.strictObject({
   minPassRate: z.number().gt(0).max(1).optional(),
   maxScoreSpread: z.number().min(0).max(10).optional(),
   // Extra Playwright tags for this case, on top of @chat-agent, e.g. ["@happy-path"]
-  tags: z
-    .array(
-      z
-        .string()
-        .regex(/^@[A-Za-z0-9_-]+$/, 'Tags look like "@happy-path"')
-        // The smoke workflow runs without API keys, so a judged case would always fail there
-        .refine((tag) => tag !== "@smoke", "Chatbot cases need an API key, so they can't be @smoke"),
-    )
-    .optional(),
+  tags: z.array(z.string().regex(/^@[A-Za-z0-9_-]+$/, 'Tags look like "@happy-path"')).optional(),
 });
 
 export type EvalCase = z.infer<typeof EvalCaseSchema>;
