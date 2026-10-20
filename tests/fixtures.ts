@@ -1,21 +1,11 @@
 import { test as base, expect, type Locator, type Page } from "@playwright/test";
 import { z } from "zod";
-import {
-  findScenario,
-  formatVerdict,
-  judgeUiOutcome,
-  repoRoot,
-  visionJudgeAvailable,
-} from "../src/evaluators/ui_judge.js";
-import {
-  DashboardPage,
-  demoCredentials,
-  DirectoryPage,
-  DocumentsPage,
-  LoginPage,
-  ProfilePage,
-  TimeOffPage,
-} from "./pages/index.js";
+
+// The demo portal's login, the same defaults as app/server.mjs
+const demoCredentials = {
+  username: process.env.DEMO_USERNAME ?? "demo",
+  password: process.env.DEMO_PASSWORD ?? "demo123",
+};
 
 export type ToolCall = { toolName: string; args: Record<string, unknown>; result?: unknown };
 
@@ -123,73 +113,13 @@ export class MockAgent {
   }
 }
 
-type PageObjects = {
-  loginPage: LoginPage;
-  dashboardPage: DashboardPage;
-  timeOffPage: TimeOffPage;
-  documentsPage: DocumentsPage;
-  directoryPage: DirectoryPage;
-  profilePage: ProfilePage;
-};
-
-export const test = base.extend<PageObjects & { chatPage: ChatPage; mockAgent: MockAgent; uiJudge: void }>({
-  // Page objects for the portal UI tests (see tests/pages). They only wrap the page: sign in first with signIn(page).
-  loginPage: async ({ page }, use) => use(new LoginPage(page)),
-  dashboardPage: async ({ page }, use) => use(new DashboardPage(page)),
-  timeOffPage: async ({ page }, use) => use(new TimeOffPage(page)),
-  documentsPage: async ({ page }, use) => use(new DocumentsPage(page)),
-  directoryPage: async ({ page }, use) => use(new DirectoryPage(page)),
-  profilePage: async ({ page }, use) => use(new ProfilePage(page)),
-
+export const test = base.extend<{ chatPage: ChatPage; mockAgent: MockAgent }>({
   chatPage: async ({ page }, use) => {
     await use(new ChatPage(page));
   },
   mockAgent: async ({ page }, use) => {
     await use(new MockAgent(page));
   },
-
-  // With UI_JUDGE=1, an independent LLM judge reviews the final page of every test generated
-  // from a plan (files with a `// spec:` comment) and attaches its verdict to the report.
-  // If the judge finds a contradiction in a test whose own assertions passed, the test fails.
-  // Opt a test out with: test.info().annotations.push({ type: "ui-judge", description: "skip: <reason>" })
-  uiJudge: [
-    async ({ page }, use, testInfo) => {
-      await use();
-      if (process.env.UI_JUDGE !== "1") return;
-
-      // A test can opt out with a reason, e.g. when its final step runs in another browser context
-      if (testInfo.annotations.some((a) => a.type === "ui-judge" && a.description?.startsWith("skip"))) return;
-      const scenario = await findScenario(testInfo.file, testInfo.title, repoRoot(testInfo.config.configFile));
-      if (!scenario) return;
-      if (!visionJudgeAvailable()) {
-        testInfo.annotations.push({ type: "ui-judge", description: "skipped: needs ANTHROPIC_API_KEY or OPENAI_API_KEY" });
-        return;
-      }
-
-      let verdict;
-      try {
-        verdict = await judgeUiOutcome({
-          scenario: scenario.text,
-          finalStep: scenario.finalStep,
-          url: page.url(),
-          ariaSnapshot: await page.locator("body").ariaSnapshot(),
-          screenshot: await page.screenshot({ fullPage: true }),
-        });
-      } catch (error) {
-        testInfo.annotations.push({ type: "ui-judge", description: `error: ${(error as Error).message}` });
-        return;
-      }
-
-      const report = formatVerdict(verdict);
-      await testInfo.attach("ui-judge-verdict", { body: report, contentType: "text/plain" });
-      testInfo.annotations.push({ type: "ui-judge", description: `${verdict.verdict}: ${verdict.summary}` });
-      if (verdict.verdict === "FAIL" && testInfo.status === "passed") {
-        throw new Error(`The test's assertions passed, but the independent UI judge disagrees.\n\n${report}`);
-      }
-    },
-    { auto: true },
-  ],
 });
 
 export { expect };
-export { demoCredentials };

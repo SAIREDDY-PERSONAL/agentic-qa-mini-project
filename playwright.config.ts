@@ -5,16 +5,14 @@ const PORT = Number(process.env.PORT ?? 8080);
 const BASE_URL = `http://localhost:${PORT}`;
 
 
-// tests/judge-demo holds deliberately weak tests that only run in the judge demo (npm run judge:demo)
-const judgeDemo = process.env.JUDGE_DEMO ? [] : [/@judge-demo/];
 // The chatbot suite makes one paid judge call per test and does not depend on the browser,
-// so it runs on Chromium only. The UI judge (UI_JUDGE=1) is kept to Chromium by its npm scripts.
+// so it runs on Chromium only.
 const chromiumOnly = [/@chat-agent/];
 
 const browser = (name: string, use: Project["use"], chromium = false): Project => ({
   name,
   use,
-  grepInvert: chromium ? judgeDemo : [...judgeDemo, ...chromiumOnly],
+  grepInvert: chromium ? [] : chromiumOnly,
 });
 
 export default defineConfig({
